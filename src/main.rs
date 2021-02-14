@@ -1,19 +1,16 @@
 mod test;
 mod ui;
 
-use test::{Test, results};
+use test::{results::Results, Test};
 
-use std::io::{self, BufRead};
 use std::fs;
+use std::io::{self, Read, BufRead};
 use std::path::PathBuf;
 use structopt::StructOpt;
-use termion::raw::IntoRawMode;
 use termion::event::Key;
 use termion::input::TermRead;
-use tui::{
-    Terminal,
-    backend::TermionBackend
-};
+use termion::raw::IntoRawMode;
+use tui::{backend::TermionBackend, terminal::Terminal};
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "ttyper", about = "Terminal-based typing test.")]
@@ -33,8 +30,11 @@ fn main() -> Result<(), io::Error> {
         let words = match opt.test_contents {
             Some(path) => {
                 let file = fs::File::open(path).expect("Error reading test input file.");
-                io::BufReader::new(file).lines().filter_map(|t| t.ok()).collect()
-            },
+                io::BufReader::new(file)
+                    .lines()
+                    .filter_map(|t| t.ok())
+                    .collect()
+            }
             None => unimplemented!(),
         };
 
@@ -45,27 +45,41 @@ fn main() -> Result<(), io::Error> {
     let stdout = io::stdout().into_raw_mode()?;
     let backend = TermionBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
+
     terminal.clear()?;
     terminal.draw(|f| {
-        let size = f.size();
-        f.render_widget(&test, size);
+        f.render_widget(&test, f.size());
     })?;
 
-    for k in stdin.keys() {
-        let k = k.unwrap();
-        match k {
+    for key in stdin.keys() {
+        let key = key.unwrap();
+        match key {
             Key::Ctrl('c') => break,
-            Key::Char(_) | Key::Backspace => test.handle_key(k),
-            _ => {},
+            Key::Char(_) | Key::Backspace => test.handle_key(key),
+            _ => {}
+        }
+
+        if test.complete {
+            break;
         }
 
         terminal.draw(|f| {
-            let size = f.size();
-            f.render_widget(&test, size);
+            f.render_widget(&test, f.size());
         })?;
     }
 
+    // Draw results
+    let results = Results::from(&test);
     terminal.clear()?;
-    println!("{:?}", results::Results::from(&test));
+    terminal.draw(|f| {
+        f.render_widget(&results, f.size());
+    })?;
+
+    // Wait for keypress
+    {
+        let mut buf = [0; 1];
+        io::stdin().read(&mut buf)?;
+    }
+
     Ok(())
 }

@@ -75,10 +75,11 @@ impl Test {
         let word = self.words.get_mut(self.current_word).unwrap();
 
         match key {
-            Key::Char(' ') | Key::Char('\n') => match self.word_progress.len() {
-                0 => {}
-                _ => self.next_word(),
-            },
+            Key::Char(' ') | Key::Char('\n') => {
+                if !self.word_progress.is_empty() {
+                    self.next_word();
+                }
+            }
             Key::Backspace => match self.word_progress.len() {
                 0 => self.last_word(),
                 _ => {
@@ -115,7 +116,7 @@ impl Test {
 
         self.word_progress.clear();
 
-        if self.current_word == self.words.len() {
+        if self.current_word == self.words.len() - 1 {
             self.complete = true;
             self.current_word = 0;
             return;

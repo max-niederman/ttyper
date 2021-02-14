@@ -2,7 +2,6 @@ use super::Test;
 
 use ascii::AsciiChar;
 use std::fmt;
-use std::time::{self, Instant};
 use termion::event::Key;
 
 #[derive(Clone, Copy, Debug)]
@@ -24,7 +23,7 @@ impl From<Fraction> for f64 {
     fn from(f: Fraction) -> Self {
         match f.denominator {
             0 => 1 as f64,
-            _ => (f.numerator / f.denominator) as f64,
+            _ => f.numerator as f64 / f.denominator as f64,
         }
     }
 }
@@ -50,21 +49,21 @@ impl PartialResults for Test {
 
 #[derive(Debug)]
 pub struct CPSData {
-    overall: f64,
-    per_event: Vec<f64>,
-    per_key: [f64; 256],
+    pub overall: f64,
+    pub per_event: Vec<f64>,
+    pub per_key: [f64; 256],
 }
 
 #[derive(Debug)]
 pub struct AccuracyData {
-    overall: Fraction,
-    per_key: [Fraction; 256],
+    pub overall: Fraction,
+    pub per_key: [Fraction; 256],
 }
 
 #[derive(Debug)]
 pub struct Results {
-    cps: CPSData,
-    accuracy: AccuracyData,
+    pub cps: CPSData,
+    pub accuracy: AccuracyData,
 }
 
 impl From<&Test> for Results {
