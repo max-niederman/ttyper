@@ -5,45 +5,32 @@ use std::iter::FromIterator;
 use std::time::Instant;
 use termion::event::Key;
 
-#[derive(Clone, Copy, Debug)]
 pub struct TestEvent {
-    key: Key,
-    correct: bool,
-}
-
-pub struct TimedTestEvent {
     time: Instant,
-    event: TestEvent,
+    correct: bool,
+    key: Key,
 }
 
-impl fmt::Debug for TimedTestEvent {
+impl fmt::Debug for TestEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TimedTestEvent")
+            .field("correct", &self.correct)
+            .field("key", &self.key)
             .field("time", &String::from("Instant { ... }"))
-            .field("event", &self.event)
             .finish()
     }
 }
 
-impl From<TestEvent> for TimedTestEvent {
-    fn from(event: TestEvent) -> Self {
-        Self {
-            event,
-            time: Instant::now(),
-        }
-    }
-}
-
 pub struct Test {
-    pub events: Vec<TimedTestEvent>,
+    pub events: Vec<TestEvent>,
     pub start: Instant,
     pub complete: bool,
     pub targets: Vec<String>,
     pub current_target: usize,
     pub target_progress: String,
-    correct_events: Vec<TestEvent>,
+    correct_keys: Vec<Key>,
     // NOTE: In reverse order for O(1) pop and push
-    needed_events: Vec<TestEvent>,
+    needed_keys: Vec<Key>,
 }
 
 impl fmt::Debug for Test {
@@ -53,17 +40,17 @@ impl fmt::Debug for Test {
             .field("current_target", &self.current_target)
             .field("target_progress", &self.target_progress)
             .field("targets", &self.targets)
-            .field("events", &String::from_iter(self.events.iter().filter_map(|e| match e.event.key {
+            .field("events", &String::from_iter(self.events.iter().filter_map(|e| match e.key {
                 Key::Backspace => Some(String::from("⌫")),
                 Key::Char(c) => Some(c.to_string()),
                 _ => None,
             })))
-            .field("correct_events", &String::from_iter(self.correct_events.iter().filter_map(|e| match e.key {
+            .field("correct_events", &String::from_iter(self.correct_keys.iter().filter_map(|k| match k {
                 Key::Backspace => Some(String::from("⌫")),
                 Key::Char(c) => Some(c.to_string()),
                 _ => None,
             })))
-            .field("needed_events", &String::from_iter(self.needed_events.iter().rev().filter_map(|e| match e.key {
+            .field("needed_events", &String::from_iter(self.needed_keys.iter().rev().filter_map(|k| match k {
                 Key::Backspace => Some(String::from("⌫")),
                 Key::Char(c) => Some(c.to_string()),
                 _ => None,
@@ -81,61 +68,57 @@ impl Test {
             targets,
             current_target: 0,
             target_progress: String::new(),
-            correct_events: Vec::new(),
-            needed_events: Vec::new(),
+            correct_keys: Vec::new(),
+            needed_keys: Vec::new(),
         };
 
-        s.needed_events = s.targets[s.current_target]
+        s.needed_keys = s.targets[s.current_target]
             .chars()
             .rev()
-            .map(|c| TestEvent {
-                key: Key::Char(c),
-                correct: true,
-            })
+            .map(|c| Key::Char(c))
             .collect();
         s
     }
 
     pub fn handle_key(&mut self, key: Key) {
-        let correct = self.needed_events.last().unwrap().key;
+        let correct = *self.needed_keys.last().unwrap();
 
-        let timed_event = match key == correct {
+        let test_event = match key == correct {
             true => {
-                let event = TestEvent { correct: true, key };
+                self.needed_keys.pop();
+                self.correct_keys.push(key);
 
-                self.needed_events.pop();
-                self.correct_events.push(event);
-
-                TimedTestEvent::from(event)
+                TestEvent {
+                    time: Instant::now(),
+                    correct: true,
+                    key,
+                }
             }
 
             false => {
-                let event = TestEvent {
-                    correct: false,
-                    key,
-                };
-
                 match key {
                     Key::Backspace => {
-                        if let Some(e) = self.correct_events.pop() {
-                            self.needed_events.push(e);
+                        if let Some(k) = self.correct_keys.pop() {
+                            self.needed_keys.push(k);
                         }
                     }
                     Key::Char(_) => {
-                        self.needed_events.push(TestEvent {
-                            correct: true,
-                            key: Key::Backspace,
-                        });
+                        self.needed_keys.push(Key::Backspace);
                     }
                     _ => {
                         return;
                     }
                 };
 
-                TimedTestEvent::from(event)            }
+                TestEvent {
+                    time: Instant::now(),
+                    correct: false,
+                    key,
+                }
+            }
         };
 
-        self.events.push(timed_event);
+        self.events.push(test_event);
 
         match key {
             Key::Backspace => {
@@ -147,7 +130,7 @@ impl Test {
             _ => {}
         }
 
-        if self.needed_events.is_empty() {
+        if self.needed_keys.is_empty() {
             self.next_target()
         }
     }
@@ -160,14 +143,11 @@ impl Test {
         }
 
         self.target_progress.clear();
-        self.correct_events.clear();
-        self.needed_events = self.targets[self.current_target]
+        self.correct_keys.clear();
+        self.needed_keys = self.targets[self.current_target]
             .chars()
             .rev()
-            .map(|c| TestEvent {
-                key: Key::Char(c),
-                correct: true,
-            })
+            .map(|c| Key::Char(c))
             .collect();
     }
 }
