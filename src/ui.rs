@@ -68,30 +68,33 @@ impl Widget for &Test {
         input.draw_inner(&Spans::from(self.word_progress.clone()), buf);
 
         let target_text = Spans::from({
-            let mut v: Vec<Span> = Vec::new();
-            v.extend(self.words[..self.current_word].iter().map(|w| {
-                Span::styled(
-                    w.text.clone() + " ",
-                    match w.correct {
-                        true => Style::default().fg(Color::Green),
-                        false => Style::default().fg(Color::Red),
-                    },
-                )
-            }));
-            v.push(Span::styled(
-                self.words[self.current_word].text.clone() + " ",
-                Style::default().fg(Color::Cyan),
-            ));
-            v.extend(
-                self.words[self.current_word + 1..]
-                    .iter()
-                    .map(|w| Span::styled(w.text.clone() + " ", Style::default().fg(Color::Gray))),
-            );
-            v
+            match self.words.len() > self.current_word {
+                false => vec![Span::styled("Test Complete!", Style::default().fg(Color::Cyan))],
+                true => {
+                    let mut v: Vec<Span> = Vec::new();
+                    v.extend(self.words[..self.current_word].iter().map(|w| {
+                        Span::styled(
+                            w.text.clone() + " ",
+                            match w.correct {
+                                true => Style::default().fg(Color::Green),
+                                false => Style::default().fg(Color::Red),
+                            },
+                        )
+                    }));
+                    v.push(Span::styled(
+                        self.words[self.current_word].text.clone() + " ",
+                        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                    ));
+                    v.extend(self.words[self.current_word + 1..].iter().map(|w| {
+                        Span::styled(w.text.clone() + " ", Style::default().fg(Color::Gray))
+                    }));
+                    v
+                }
+            }
         });
         let target = Paragraph::new(target_text).block(
             Block::default()
-                .title(Spans::from(vec![Span::styled("Input", title_style)]))
+                .title(Spans::from(vec![Span::styled("Text", title_style)]))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded),
         );

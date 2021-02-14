@@ -1,7 +1,7 @@
 mod test;
 mod ui;
 
-use test::Test;
+use test::{Test, results};
 
 use std::io::{self, BufRead};
 use std::fs;
@@ -66,5 +66,6 @@ fn main() -> Result<(), io::Error> {
     }
 
     terminal.clear()?;
+    println!("{:?}", results::Results::from(&test));
     Ok(())
 }

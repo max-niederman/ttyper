@@ -5,8 +5,8 @@ use std::time::Instant;
 use termion::event::Key;
 
 pub struct TestEvent {
-    time: Instant,
-    key: Key,
+    pub time: Instant,
+    pub key: Key,
 }
 
 impl fmt::Debug for TestEvent {
@@ -21,7 +21,7 @@ impl fmt::Debug for TestEvent {
 #[derive(Debug)]
 pub struct TestWord {
     pub text: String,
-    events: Vec<TestEvent>,
+    pub events: Vec<TestEvent>,
     pub correct: bool,
 }
 
