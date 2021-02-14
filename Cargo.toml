@@ -1,0 +1,12 @@
+[package]
+name = "ttyper"
+version = "0.1.0"
+authors = ["Max Niederman <max@maxniederman.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+structopt = "0.3"
+tui = "0.14"
+termion = "1.5"
