@@ -1,16 +1,12 @@
-use super::test::{
-    Test,
-    results::{PartialResults}
-};
+use super::test::Test;
 
-use std::iter::FromIterator;
 use termion::cursor;
 use tui::{
     buffer::Buffer,
-    layout::{Layout, Constraint, Direction, Rect},
-    text::{Span, Spans, Text},
-    style::{Style, Modifier, Color},
-    widgets::{Widget, Block, Paragraph, Borders, BorderType},
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style},
+    text::{Span, Spans},
+    widgets::{Block, BorderType, Borders, Paragraph, Widget},
 };
 
 struct SizedBlock<'a> {
@@ -39,7 +35,10 @@ impl DrawInner<&Spans<'_>> for SizedBlock<'_> {
     }
 }
 
-impl<T> DrawInner<T> for SizedBlock<'_> where T: Widget + UsedWidget {
+impl<T> DrawInner<T> for SizedBlock<'_>
+where
+    T: Widget + UsedWidget,
+{
     fn draw_inner(&self, content: T, buf: &mut Buffer) {
         let inner = self.block.inner(self.area);
         content.render(inner, buf);
@@ -68,15 +67,34 @@ impl Widget for &Test {
         print!("{}", cursor::BlinkingBar);
         input.draw_inner(&Spans::from(self.word_progress.clone()), buf);
 
-        let target = SizedBlock {
-            block: Block::default()
-                .title(Spans::from(vec![Span::styled("Text", title_style)]))
+        let target_text = Spans::from({
+            let mut v: Vec<Span> = Vec::new();
+            v.extend(self.words[..self.current_word].iter().map(|w| {
+                Span::styled(
+                    w.text.clone() + " ",
+                    match w.correct {
+                        true => Style::default().fg(Color::Green),
+                        false => Style::default().fg(Color::Red),
+                    },
+                )
+            }));
+            v.push(Span::styled(
+                self.words[self.current_word].text.clone() + " ",
+                Style::default().fg(Color::Cyan),
+            ));
+            v.extend(
+                self.words[self.current_word + 1..]
+                    .iter()
+                    .map(|w| Span::styled(w.text.clone() + " ", Style::default().fg(Color::Gray))),
+            );
+            v
+        });
+        let target = Paragraph::new(target_text).block(
+            Block::default()
+                .title(Spans::from(vec![Span::styled("Input", title_style)]))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded),
-            area: chunks[1],
-        };
-        target.render(buf);
-        let target_text = Text::from(String::from_iter(self.words.iter().map(|w| format!("{} ", w.word))));
-        target.draw_inner(Paragraph::new(target_text), buf);
+        );
+        target.render(chunks[1], buf);
     }
 }

@@ -27,7 +27,7 @@ pub trait PartialResults {
 }
 
 impl PartialResults for Test {
-    fn progress(&self) -> Fraction { 
+    fn progress(&self) -> Fraction {
         Fraction {
             numerator: self.current_word + 1,
             denominator: self.words.len(),

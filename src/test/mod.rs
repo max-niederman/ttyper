@@ -20,22 +20,23 @@ impl fmt::Debug for TestEvent {
 
 #[derive(Debug)]
 pub struct TestWord {
-    pub word: String,
-    pub events: Vec<TestEvent>,
+    pub text: String,
+    events: Vec<TestEvent>,
+    pub correct: bool,
 }
 
 impl TestWord {
-    fn entered_string(&self) -> String {
+    pub fn entered_string(&self) -> String {
         let mut s = String::new();
         for e in &self.events {
             match e.key {
                 Key::Backspace => {
                     s.pop();
-                },
+                }
                 Key::Char(c) => {
                     s.push(c);
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
         s
@@ -43,10 +44,11 @@ impl TestWord {
 }
 
 impl From<String> for TestWord {
-    fn from(word: String) -> Self {
+    fn from(string: String) -> Self {
         TestWord {
-            word,
+            text: string,
             events: Vec::new(),
+            correct: false,
         }
     }
 }
@@ -55,7 +57,7 @@ impl From<String> for TestWord {
 pub struct Test {
     pub words: Vec<TestWord>,
     pub word_progress: String,
-    current_word: usize,
+    pub current_word: usize,
     pub complete: bool,
 }
 
@@ -93,8 +95,8 @@ impl Test {
                     key,
                 });
                 self.word_progress.push(c);
-            },
-            _ => {},
+            }
+            _ => {}
         };
     }
 
@@ -108,6 +110,9 @@ impl Test {
     }
 
     fn next_word(&mut self) {
+        let mut word = self.words.get_mut(self.current_word).unwrap();
+        word.correct = self.word_progress == word.text;
+
         self.word_progress.clear();
 
         if self.current_word == self.words.len() {

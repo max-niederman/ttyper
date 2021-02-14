@@ -59,14 +59,10 @@ fn main() -> Result<(), io::Error> {
             _ => {},
         }
 
-        if opt.debug {
-            println!("State {:?}", test);
-        } else {
-            terminal.draw(|f| {
-                let size = f.size();
-                f.render_widget(&test, size);
-            })?;
-        }
+        terminal.draw(|f| {
+            let size = f.size();
+            f.render_widget(&test, size);
+        })?;
     }
 
     terminal.clear()?;
