@@ -23,17 +23,22 @@ struct Opt {
 
     // TODO: Add option to download text automatically
     #[structopt(parse(from_os_str))]
-    test_contents: PathBuf,
+    test_contents: Option<PathBuf>,
 }
 
 fn main() -> Result<(), io::Error> {
     let opt = Opt::from_args();
 
     let mut test = {
-        let file = fs::File::open(opt.test_contents).expect("Error reading test input file.");
-        let targets = io::BufReader::new(file).lines().filter_map(|t| t.ok()).collect();
+        let words = match opt.test_contents {
+            Some(path) => {
+                let file = fs::File::open(path).expect("Error reading test input file.");
+                io::BufReader::new(file).lines().filter_map(|t| t.ok()).collect()
+            },
+            None => unimplemented!(),
+        };
 
-        Test::new(targets)
+        Test::new(words)
     };
 
     let stdin = io::stdin();

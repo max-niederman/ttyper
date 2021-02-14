@@ -1,162 +1,121 @@
 pub mod results;
 
 use std::fmt;
-use std::iter::FromIterator;
 use std::time::Instant;
 use termion::event::Key;
 
 pub struct TestEvent {
     time: Instant,
-    correct: bool,
     key: Key,
 }
 
 impl fmt::Debug for TestEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("TimedTestEvent")
-            .field("correct", &self.correct)
-            .field("key", &self.key)
+        f.debug_struct("TestEvent")
             .field("time", &String::from("Instant { ... }"))
+            .field("key", &self.key)
             .finish()
     }
 }
 
-pub struct Test {
+#[derive(Debug)]
+pub struct TestWord {
+    pub word: String,
     pub events: Vec<TestEvent>,
-    pub complete: bool,
-    pub targets: Vec<String>,
-    pub current_target: usize,
-    pub target_progress: String,
-    correct_keys: Vec<Key>,
-    // NOTE: In reverse order for O(1) pop and push
-    needed_keys: Vec<Key>,
 }
 
-impl fmt::Debug for Test {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Test")
-            .field("complete", &self.complete)
-            .field("current_target", &self.current_target)
-            .field("target_progress", &self.target_progress)
-            .field("targets", &self.targets)
-            .field(
-                "events",
-                &String::from_iter(self.events.iter().filter_map(|e| match e.key {
-                    Key::Backspace => Some(String::from("⌫")),
-                    Key::Char(c) => Some(c.to_string()),
-                    _ => None,
-                })),
-            )
-            .field(
-                "correct_events",
-                &String::from_iter(self.correct_keys.iter().filter_map(|k| match k {
-                    Key::Backspace => Some(String::from("⌫")),
-                    Key::Char(c) => Some(c.to_string()),
-                    _ => None,
-                })),
-            )
-            .field(
-                "needed_events",
-                &String::from_iter(self.needed_keys.iter().rev().filter_map(|k| match k {
-                    Key::Backspace => Some(String::from("⌫")),
-                    Key::Char(c) => Some(c.to_string()),
-                    _ => None,
-                })),
-            )
-            .finish()
+impl TestWord {
+    fn entered_string(&self) -> String {
+        let mut s = String::new();
+        for e in &self.events {
+            match e.key {
+                Key::Backspace => {
+                    s.pop();
+                },
+                Key::Char(c) => {
+                    s.push(c);
+                },
+                _ => {},
+            }
+        }
+        s
     }
+}
+
+impl From<String> for TestWord {
+    fn from(word: String) -> Self {
+        TestWord {
+            word,
+            events: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Test {
+    pub words: Vec<TestWord>,
+    pub word_progress: String,
+    current_word: usize,
+    pub complete: bool,
 }
 
 impl Test {
-    pub fn new(targets: Vec<String>) -> Self {
-        let mut s = Self {
-            events: Vec::new(),
+    pub fn new(words: Vec<String>) -> Self {
+        Self {
+            words: words.into_iter().map(|w| TestWord::from(w)).collect(),
+            word_progress: String::new(),
+            current_word: 0,
             complete: false,
-            targets,
-            current_target: 0,
-            target_progress: String::new(),
-            correct_keys: Vec::new(),
-            needed_keys: Vec::new(),
-        };
-
-        s.needed_keys = s.targets[s.current_target]
-            .chars()
-            .rev()
-            .map(|c| Key::Char(c))
-            .collect();
-        s
+        }
     }
 
     pub fn handle_key(&mut self, key: Key) {
-        let correct = *self.needed_keys.last().unwrap();
-
-        let test_event = match key == correct {
-            true => {
-                self.needed_keys.pop();
-                self.correct_keys.push(key);
-
-                TestEvent {
-                    time: Instant::now(),
-                    correct: true,
-                    key,
-                }
-            }
-
-            false => {
-                match key {
-                    Key::Backspace => {
-                        if let Some(k) = self.correct_keys.pop() {
-                            self.needed_keys.push(k);
-                        }
-                    }
-                    Key::Char(_) => {
-                        self.needed_keys.push(Key::Backspace);
-                    }
-                    _ => {
-                        return;
-                    }
-                };
-
-                TestEvent {
-                    time: Instant::now(),
-                    correct: false,
-                    key,
-                }
-            }
-        };
-
-        self.events.push(test_event);
+        let word = self.words.get_mut(self.current_word).unwrap();
 
         match key {
-            Key::Backspace => {
-                self.target_progress.pop();
-            }
+            Key::Char(' ') | Key::Char('\n') => match self.word_progress.len() {
+                0 => {}
+                _ => self.next_word(),
+            },
+            Key::Backspace => match self.word_progress.len() {
+                0 => self.last_word(),
+                _ => {
+                    word.events.push(TestEvent {
+                        time: Instant::now(),
+                        key,
+                    });
+                    self.word_progress.pop();
+                }
+            },
             Key::Char(c) => {
-                self.target_progress.push(c);
-            }
-            _ => {}
-        }
-
-        if self.needed_keys.is_empty() {
-            self.next_target()
-        }
+                word.events.push(TestEvent {
+                    time: Instant::now(),
+                    key,
+                });
+                self.word_progress.push(c);
+            },
+            _ => {},
+        };
     }
 
-    fn next_target(&mut self) {
-
-
-        self.current_target += 1;
-        if self.current_target == self.targets.len() {
-            self.current_target = 0;
-            self.complete = true;
+    fn last_word(&mut self) {
+        if self.current_word == 0 {
+            return;
         }
 
-        self.target_progress.clear();
-        self.correct_keys.clear();
-        self.needed_keys = self.targets[self.current_target]
-            .chars()
-            .rev()
-            .map(|c| Key::Char(c))
-            .collect();
+        self.current_word -= 1;
+        self.word_progress = self.words[self.current_word].entered_string();
+    }
+
+    fn next_word(&mut self) {
+        self.word_progress.clear();
+
+        if self.current_word == self.words.len() {
+            self.complete = true;
+            self.current_word = 0;
+            return;
+        }
+
+        self.current_word += 1;
     }
 }

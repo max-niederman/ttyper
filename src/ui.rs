@@ -3,6 +3,7 @@ use super::test::{
     results::{PartialResults}
 };
 
+use std::iter::FromIterator;
 use termion::cursor;
 use tui::{
     buffer::Buffer,
@@ -24,26 +25,8 @@ impl SizedBlock<'_> {
     }
 }
 
-struct PartialResultsWidget<'a> {
-    test: &'a Test,
-}
-
-impl Widget for PartialResultsWidget<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let style = Style::default();
-
-        let mut text = Text::default();
-        text.extend(Text::styled(format!("Progress: {}", self.test.progress()), style));
-        text.extend(Text::styled(format!("WPM: {}", self.test.wpm()), style));
-        text.extend(Text::styled(format!("Accuracy: {}%", f32::from(self.test.accuracy()) * 100.0), style));
-
-        Paragraph::new(text).render(area, buf);
-    }
-}
-
 trait UsedWidget {}
 impl UsedWidget for Paragraph<'_> {}
-impl UsedWidget for PartialResultsWidget<'_> {}
 
 trait DrawInner<T> {
     fn draw_inner(&self, content: T, buf: &mut Buffer);
@@ -67,7 +50,7 @@ impl Widget for &Test {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Length(3), Constraint::Length(6), Constraint::Length(6)])
+            .constraints([Constraint::Length(3), Constraint::Length(6)])
             .split(area);
 
         let title_style = Style::default()
@@ -83,7 +66,7 @@ impl Widget for &Test {
         };
         input.render(buf);
         print!("{}", cursor::BlinkingBar);
-        input.draw_inner(&Spans::from(self.target_progress.clone()), buf);
+        input.draw_inner(&Spans::from(self.word_progress.clone()), buf);
 
         let target = SizedBlock {
             block: Block::default()
@@ -93,17 +76,7 @@ impl Widget for &Test {
             area: chunks[1],
         };
         target.render(buf);
-        let target_text = Text::from(self.targets[self.current_target].clone());
+        let target_text = Text::from(String::from_iter(self.words.iter().map(|w| format!("{} ", w.word))));
         target.draw_inner(Paragraph::new(target_text), buf);
-
-        let results = SizedBlock {
-            block: Block::default()
-                .title(Spans::from(vec![Span::styled("Statistics", title_style)]))
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
-            area: chunks[2],
-        };
-        results.render(buf);
-        results.draw_inner(PartialResultsWidget { test: self }, buf);
     }
 }
