@@ -63,5 +63,7 @@ fn main() -> Result<(), io::Error> {
             })?;
         }
     }
+
+    terminal.clear()?;
     Ok(())
 }

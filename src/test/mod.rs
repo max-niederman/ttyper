@@ -23,7 +23,6 @@ impl fmt::Debug for TestEvent {
 
 pub struct Test {
     pub events: Vec<TestEvent>,
-    pub start: Instant,
     pub complete: bool,
     pub targets: Vec<String>,
     pub current_target: usize,
@@ -40,21 +39,30 @@ impl fmt::Debug for Test {
             .field("current_target", &self.current_target)
             .field("target_progress", &self.target_progress)
             .field("targets", &self.targets)
-            .field("events", &String::from_iter(self.events.iter().filter_map(|e| match e.key {
-                Key::Backspace => Some(String::from("⌫")),
-                Key::Char(c) => Some(c.to_string()),
-                _ => None,
-            })))
-            .field("correct_events", &String::from_iter(self.correct_keys.iter().filter_map(|k| match k {
-                Key::Backspace => Some(String::from("⌫")),
-                Key::Char(c) => Some(c.to_string()),
-                _ => None,
-            })))
-            .field("needed_events", &String::from_iter(self.needed_keys.iter().rev().filter_map(|k| match k {
-                Key::Backspace => Some(String::from("⌫")),
-                Key::Char(c) => Some(c.to_string()),
-                _ => None,
-            })))
+            .field(
+                "events",
+                &String::from_iter(self.events.iter().filter_map(|e| match e.key {
+                    Key::Backspace => Some(String::from("⌫")),
+                    Key::Char(c) => Some(c.to_string()),
+                    _ => None,
+                })),
+            )
+            .field(
+                "correct_events",
+                &String::from_iter(self.correct_keys.iter().filter_map(|k| match k {
+                    Key::Backspace => Some(String::from("⌫")),
+                    Key::Char(c) => Some(c.to_string()),
+                    _ => None,
+                })),
+            )
+            .field(
+                "needed_events",
+                &String::from_iter(self.needed_keys.iter().rev().filter_map(|k| match k {
+                    Key::Backspace => Some(String::from("⌫")),
+                    Key::Char(c) => Some(c.to_string()),
+                    _ => None,
+                })),
+            )
             .finish()
     }
 }
@@ -63,7 +71,6 @@ impl Test {
     pub fn new(targets: Vec<String>) -> Self {
         let mut s = Self {
             events: Vec::new(),
-            start: Instant::now(),
             complete: false,
             targets,
             current_target: 0,
@@ -136,6 +143,8 @@ impl Test {
     }
 
     fn next_target(&mut self) {
+
+
         self.current_target += 1;
         if self.current_target == self.targets.len() {
             self.current_target = 0;
