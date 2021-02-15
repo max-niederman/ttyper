@@ -73,7 +73,7 @@ impl Widget for &Test {
         input.draw_inner(&Spans::from(self.word_progress.clone()), buf);
 
         let target_lines: Vec<Spans> = {
-            let mut words =
+            let words =
                 iter::empty::<Span>()
                     .chain(self.words[..self.current_word].iter().map(|w| {
                         Span::styled(
@@ -105,7 +105,7 @@ impl Widget for &Test {
             let mut lines: Vec<Spans> = Vec::new();
             let mut current_line: Vec<Span> = Vec::new();
             let mut current_width = 0;
-            while let Some(word) = words.next() {
+            for word in words {
                 let word_width = word.width();
 
                 if current_width + word_width > chunks[1].width as usize - 2 {

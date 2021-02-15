@@ -5,7 +5,7 @@ mod ui;
 use test::{results::Results, Test};
 
 use std::fs;
-use std::io::{self, BufRead, Read};
+use std::io::{self, BufRead};
 use std::path::PathBuf;
 use rand::thread_rng;
 use rand::seq::SliceRandom;
@@ -89,10 +89,7 @@ fn main() -> Result<(), io::Error> {
     })?;
 
     // Wait for keypress
-    {
-        let mut buf = [0; 1];
-        io::stdin().read(&mut buf)?;
-    }
+    io::stdin().keys().next();
 
     Ok(())
 }

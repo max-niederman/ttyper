@@ -16,4 +16,5 @@ cargo install ttyper
 
 - Fix weirdness with the WPM calculation.
 - Use per-word frequency data for more realistic tests.
+- Add keywise data to the results UI for "improvement tips."
 - Add WPM graph to results UI.
