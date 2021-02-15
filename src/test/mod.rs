@@ -62,9 +62,9 @@ pub struct Test {
 }
 
 impl Test {
-    pub fn new(words: Vec<String>) -> Self {
+    pub fn new(words: Vec<&String>) -> Self {
         Self {
-            words: words.into_iter().map(|w| TestWord::from(w)).collect(),
+            words: words.into_iter().map(|w| TestWord::from(w.clone())).collect(),
             word_progress: String::new(),
             current_word: 0,
             complete: false,

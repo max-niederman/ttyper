@@ -89,7 +89,7 @@ impl From<&Test> for Results {
                     }
                 }
 
-                let mut last = events.next().expect("Error while compiling results.").time;
+                let mut last = events.next().expect("Error while calculating results.").time;
                 for e in events {
                     let event_cps = (e.time - last).as_secs_f64().recip();
                     cps.per_event.push(event_cps);

@@ -1,5 +1,6 @@
 use super::test::{results, Test};
 
+use std::iter;
 use termion::cursor;
 use tui::{
     buffer::Buffer,
@@ -63,48 +64,70 @@ impl Widget for &Test {
             block: Block::default()
                 .title(Spans::from(vec![Span::styled("Input", title_style)]))
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Cyan)),
             area: chunks[0],
         };
         input.render(buf);
         print!("{}", cursor::BlinkingBar);
         input.draw_inner(&Spans::from(self.word_progress.clone()), buf);
 
-        let target_text = Spans::from({
-            match self.words.len() > self.current_word {
-                false => vec![Span::styled(
-                    "Test Complete!",
-                    Style::default().fg(Color::Magenta),
-                )],
-                true => {
-                    let mut v: Vec<Span> = Vec::new();
-                    v.extend(self.words[..self.current_word].iter().map(|w| {
+        let target_lines: Vec<Spans> = {
+            let mut words =
+                iter::empty::<Span>()
+                    .chain(self.words[..self.current_word].iter().map(|w| {
                         Span::styled(
                             w.text.clone() + " ",
-                            match w.correct {
-                                true => Style::default().fg(Color::Green),
-                                false => Style::default().fg(Color::Red),
-                            },
+                            Style::default().fg(match w.correct {
+                                true => Color::Green,
+                                false => Color::Red,
+                            }),
                         )
-                    }));
-                    v.push(Span::styled(
+                    }))
+                    .chain(iter::once(Span::styled(
                         self.words[self.current_word].text.clone() + " ",
                         Style::default()
-                            .fg(Color::Cyan)
+                            .fg(
+                                match self.words[self.current_word]
+                                    .text
+                                    .starts_with(&self.word_progress[..])
+                                {
+                                    true => Color::Green,
+                                    false => Color::Red,
+                                },
+                            )
                             .add_modifier(Modifier::BOLD),
-                    ));
-                    v.extend(self.words[self.current_word + 1..].iter().map(|w| {
+                    )))
+                    .chain(self.words[self.current_word + 1..].iter().map(|w| {
                         Span::styled(w.text.clone() + " ", Style::default().fg(Color::Gray))
                     }));
-                    v
+
+            let mut lines: Vec<Spans> = Vec::new();
+            let mut current_line: Vec<Span> = Vec::new();
+            let mut current_width = 0;
+            while let Some(word) = words.next() {
+                let word_width = word.width();
+
+                if current_width + word_width > chunks[1].width as usize - 2 {
+                    current_line.push(Span::raw("\n"));
+                    lines.push(Spans::from(current_line.clone()));
+                    current_line.clear();
+                    current_width = 0;
                 }
+
+                current_line.push(word);
+                current_width += word_width;
             }
-        });
-        let target = Paragraph::new(target_text).block(
+            lines.push(Spans::from(current_line));
+
+            lines
+        };
+        let target = Paragraph::new(target_lines).block(
             Block::default()
                 .title(Spans::from(vec![Span::styled("Text", title_style)]))
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Green)),
         );
         target.render(chunks[1], buf);
     }
@@ -164,7 +187,8 @@ impl Widget for &results::Results {
             Block::default()
                 .title(Spans::from(vec![Span::styled("Results", title_style)]))
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Cyan)),
         );
         info.render(res_chunks[0], buf);
     }

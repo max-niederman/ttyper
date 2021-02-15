@@ -11,3 +11,7 @@ structopt = "0.3"
 tui = "0.14"
 termion = "1.5"
 ascii = "1.0"
+
+[dependencies.rand]
+version = "0.8"
+features = ["alloc"]
