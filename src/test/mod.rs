@@ -21,34 +21,16 @@ impl fmt::Debug for TestEvent {
 #[derive(Debug)]
 pub struct TestWord {
     pub text: String,
+    pub progress: String,
     pub events: Vec<TestEvent>,
-    pub correct: bool,
-}
-
-impl TestWord {
-    pub fn entered_string(&self) -> String {
-        let mut s = String::new();
-        for e in &self.events {
-            match e.key {
-                Key::Backspace => {
-                    s.pop();
-                }
-                Key::Char(c) => {
-                    s.push(c);
-                }
-                _ => {}
-            }
-        }
-        s
-    }
 }
 
 impl From<String> for TestWord {
     fn from(string: String) -> Self {
         TestWord {
             text: string,
+            progress: String::new(),
             events: Vec::new(),
-            correct: false,
         }
     }
 }
@@ -56,7 +38,6 @@ impl From<String> for TestWord {
 #[derive(Debug)]
 pub struct Test {
     pub words: Vec<TestWord>,
-    pub word_progress: String,
     pub current_word: usize,
     pub complete: bool,
 }
@@ -64,8 +45,10 @@ pub struct Test {
 impl Test {
     pub fn new(words: Vec<&String>) -> Self {
         Self {
-            words: words.into_iter().map(|w| TestWord::from(w.clone())).collect(),
-            word_progress: String::new(),
+            words: words
+                .into_iter()
+                .map(|w| TestWord::from(w.clone()))
+                .collect(),
             current_word: 0,
             complete: false,
         }
@@ -73,49 +56,49 @@ impl Test {
 
     pub fn handle_key(&mut self, key: Key) {
         let word = self.words.get_mut(self.current_word).unwrap();
-
+        
         match key {
             Key::Char(' ') | Key::Char('\n') => {
-                if !self.word_progress.is_empty() {
+                if !word.progress.is_empty() {
                     self.next_word();
                 }
             }
-            Key::Backspace => match self.word_progress.len() {
+            Key::Backspace => match word.progress.len() {
                 0 => self.last_word(),
                 _ => {
                     word.events.push(TestEvent {
                         time: Instant::now(),
                         key,
                     });
-                    self.word_progress.pop();
+                    word.progress.pop();
                 }
+            },
+            // At least on Linux, Ctrl-Backspace is mapped to Ctrl('h')
+            Key::Ctrl('\x08') | Key::Ctrl('h') => {
+                word.events.push(TestEvent {
+                    time: Instant::now(),
+                    key,
+                });
+                word.progress.clear();
             },
             Key::Char(c) => {
                 word.events.push(TestEvent {
                     time: Instant::now(),
                     key,
                 });
-                self.word_progress.push(c);
+                word.progress.push(c);
             }
             _ => {}
         };
     }
 
     fn last_word(&mut self) {
-        if self.current_word == 0 {
-            return;
+        if self.current_word != 0 {
+            self.current_word -= 1;
         }
-
-        self.current_word -= 1;
-        self.word_progress = self.words[self.current_word].entered_string();
     }
 
     fn next_word(&mut self) {
-        let mut word = self.words.get_mut(self.current_word).unwrap();
-        word.correct = self.word_progress == word.text;
-
-        self.word_progress.clear();
-
         if self.current_word == self.words.len() - 1 {
             self.complete = true;
             self.current_word = 0;

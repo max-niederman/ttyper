@@ -1,1 +1,6 @@
-/target
+# Rust
+target/
+
+# Editor
+.vim/
+.nvimrc

@@ -70,7 +70,7 @@ impl Widget for &Test {
         };
         input.render(buf);
         print!("{}", cursor::BlinkingBar);
-        input.draw_inner(&Spans::from(self.word_progress.clone()), buf);
+        input.draw_inner(&Spans::from(self.words[self.current_word].progress.clone()), buf);
 
         let target_lines: Vec<Spans> = {
             let words =
@@ -78,7 +78,7 @@ impl Widget for &Test {
                     .chain(self.words[..self.current_word].iter().map(|w| {
                         Span::styled(
                             w.text.clone() + " ",
-                            Style::default().fg(match w.correct {
+                            Style::default().fg(match w.progress == w.text {
                                 true => Color::Green,
                                 false => Color::Red,
                             }),
@@ -90,7 +90,7 @@ impl Widget for &Test {
                             .fg(
                                 match self.words[self.current_word]
                                     .text
-                                    .starts_with(&self.word_progress[..])
+                                    .starts_with(&self.words[self.current_word].progress[..])
                                 {
                                     true => Color::Green,
                                     false => Color::Red,

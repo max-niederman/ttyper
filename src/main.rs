@@ -21,8 +21,8 @@ struct Opt {
     #[structopt(short, long)]
     debug: bool,
 
-    #[structopt(short, long)]
-    words: Option<usize>,
+    #[structopt(short, long, default_value = "50")]
+    words: usize,
 
     #[structopt(parse(from_os_str))]
     language_file: Option<PathBuf>,
@@ -47,7 +47,7 @@ fn main() -> Result<(), io::Error> {
         };
 
         let mut rng = thread_rng();
-        let shuffled = words.choose_multiple(&mut rng, opt.words.unwrap_or(25)).collect();
+        let shuffled = words.choose_multiple(&mut rng, opt.words).collect();
         println!("{:?}", shuffled);
 
         Test::new(shuffled)
@@ -68,8 +68,7 @@ fn main() -> Result<(), io::Error> {
         match key {
             Key::Esc => break,
             Key::Ctrl('c') => return Ok(()),
-            Key::Char(_) | Key::Backspace => test.handle_key(key),
-            _ => {}
+            _ => test.handle_key(key)
         }
 
         if test.complete {
