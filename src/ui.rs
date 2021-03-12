@@ -51,7 +51,7 @@ impl Widget for &Test {
         // Styles
         let title_style = Style::default()
             .patch(Style::default().add_modifier(Modifier::BOLD))
-            .patch(Style::default().fg(Color::Magenta));
+            .patch(Style::default().fg(Color::White));
 
         // Chunks
         let chunks = Layout::default()
@@ -138,7 +138,7 @@ impl Widget for &results::Results {
         // Styles
         let title_style = Style::default()
             .patch(Style::default().add_modifier(Modifier::BOLD))
-            .patch(Style::default().fg(Color::Magenta));
+            .patch(Style::default().fg(Color::White));
 
         // Chunks
         let chunks = Layout::default()

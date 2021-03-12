@@ -10,8 +10,6 @@ fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
     let input_root = PathBuf::from(from.as_ref()).components().count();
 
     while let Some(working_path) = stack.pop() {
-        println!("process: {:?}", &working_path);
-
         // Generate a relative path
         let src: PathBuf = working_path.components().skip(input_root).collect();
 
@@ -22,7 +20,6 @@ fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
             output_root.join(&src)
         };
         if fs::metadata(&dest).is_err() {
-            println!(" mkdir: {:?}", dest);
             fs::create_dir_all(&dest)?;
         }
 
@@ -32,14 +29,9 @@ fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
             if path.is_dir() {
                 stack.push(path);
             } else {
-                match path.file_name() {
-                    Some(filename) => {
-                        let dest_path = dest.join(filename);
-                        fs::copy(&path, &dest_path)?;
-                    }
-                    None => {
-                        println!("failed to copy: {:?}", path);
-                    }
+                if let Some(filename) = path.file_name() {
+                    let dest_path = dest.join(filename);
+                    fs::copy(&path, &dest_path)?;
                 }
             }
         }
@@ -56,10 +48,15 @@ fn main() -> std::io::Result<()> {
     #[cfg(target_os = "macos")]
     let os_conf_path = env::var_os("HOME").map(|s| Path::new(&s).join(".config"));
 
-    let install_path = os_conf_path.unwrap_or(env::current_dir().expect("Couldn't find a place to install to.")).join("ttyper");
+    let install_path = os_conf_path
+        .unwrap_or(env::current_dir().expect("Couldn't find a place to install to."))
+        .join("ttyper");
     fs::create_dir_all(&install_path)?;
 
-    let resources_path = env::current_dir().expect("Couldn't find the source directory.").join("resources");
+    let resources_path = env::current_dir()
+        .expect("Couldn't find the source directory.")
+        .join("resources")
+        .join("config");
     copy(&resources_path, &install_path)?;
 
     Ok(())
