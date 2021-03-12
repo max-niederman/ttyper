@@ -1,30 +1,29 @@
 use super::Test;
 
 use ascii::AsciiChar;
+use std::convert::TryInto;
 use std::fmt;
+use std::num::NonZeroUsize;
 use termion::event::Key;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Fraction {
     numerator: usize,
-    denominator: usize,
+    denominator: NonZeroUsize,
 }
 
 impl Fraction {
     fn default() -> Self {
         Self {
             numerator: 0,
-            denominator: 0,
+            denominator: NonZeroUsize::new(1).unwrap(),
         }
     }
 }
 
 impl From<Fraction> for f64 {
     fn from(f: Fraction) -> Self {
-        match f.denominator {
-            0 => 1 as f64,
-            _ => f.numerator as f64 / f.denominator as f64,
-        }
+        f.numerator as f64 / f.denominator.get() as f64
     }
 }
 
@@ -42,7 +41,11 @@ impl PartialResults for Test {
     fn progress(&self) -> Fraction {
         Fraction {
             numerator: self.current_word + 1,
-            denominator: self.words.len(),
+            denominator: self
+                .words
+                .len()
+                .try_into()
+                .unwrap_or(NonZeroUsize::new(1).unwrap()),
         }
     }
 }
@@ -94,25 +97,25 @@ impl From<&Test> for Results {
 
                 let mut events = test.words.iter().flat_map(|w| w.events.iter());
 
-                let mut last = events.next().expect("Error while calculating results.");
+                let mut last = events
+                    .next()
+                    .expect("The test was completed without any events.");
                 let mut key_count = [0usize; 256];
-                for event in events.clone() {
-                    let event_cps =
-                        std::panic::catch_unwind(|| (event.time - last.time).as_secs_f64().recip())
-                            .map_err(|_| {
-                                println!("Last Word: {:?}", test.words[test.words.len() - 1]);
-                                println!("Current Event: {:?} at {:?}", event, event.time);
-                                println!("Last Event: {:?} at {:?}", last, last.time);
-                            })
-                            .unwrap();
-                    cps.per_event.push(event_cps);
-
-                    Option::<AsciiChar>::from_key(event.key).map(|ac| {
-                        cps.per_key[ac as usize] += event_cps;
-                        key_count[ac as usize] += 1;
-                    });
-
+                for event in events {
+                    let event_cps = event
+                        .time
+                        .checked_duration_since(last.time)
+                        .map(|d| d.as_secs_f64().recip());
                     last = &event;
+
+                    if let Some(event_cps) = event_cps {
+                        cps.per_event.push(event_cps);
+
+                        Option::<AsciiChar>::from_key(event.key).map(|ac| {
+                            cps.per_key[ac as usize] += event_cps;
+                            key_count[ac as usize] += 1;
+                        });
+                    }
                 }
                 cps.per_key
                     .iter_mut()
@@ -136,8 +139,11 @@ impl From<&Test> for Results {
                     .filter(|event| event.correct.is_some())
                     .for_each(|event| {
                         if let Some(ch) = Option::<AsciiChar>::from_key(event.key) {
-                            acc.overall.denominator += 1;
-                            acc.per_key[ch as usize].denominator += 1;
+                            acc.overall.denominator =
+                                (acc.overall.denominator.get() + 1).try_into().unwrap();
+                            acc.per_key[ch as usize].denominator =
+                                (acc.overall.denominator.get() + 1).try_into().unwrap();
+
                             if event.correct.unwrap() {
                                 acc.overall.numerator += 1;
                                 acc.per_key[ch as usize].numerator += 1;
