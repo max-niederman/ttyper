@@ -7,6 +7,7 @@ use termion::event::Key;
 pub struct TestEvent {
     pub time: Instant,
     pub key: Key,
+    pub correct: Option<bool>,
 }
 
 impl fmt::Debug for TestEvent {
@@ -56,7 +57,7 @@ impl Test {
 
     pub fn handle_key(&mut self, key: Key) {
         let word = self.words.get_mut(self.current_word).unwrap();
-        
+
         match key {
             Key::Char(' ') | Key::Char('\n') => {
                 if !word.progress.is_empty() {
@@ -68,6 +69,7 @@ impl Test {
                 _ => {
                     word.events.push(TestEvent {
                         time: Instant::now(),
+                        correct: Some(!word.text.starts_with(&word.progress[..])),
                         key,
                     });
                     word.progress.pop();
@@ -77,16 +79,18 @@ impl Test {
             Key::Ctrl('\x08') | Key::Ctrl('h') => {
                 word.events.push(TestEvent {
                     time: Instant::now(),
+                    correct: None,
                     key,
                 });
                 word.progress.clear();
-            },
+            }
             Key::Char(c) => {
+                word.progress.push(c);
                 word.events.push(TestEvent {
                     time: Instant::now(),
+                    correct: Some(word.text.starts_with(&word.progress[..])),
                     key,
                 });
-                word.progress.push(c);
             }
             _ => {}
         };
