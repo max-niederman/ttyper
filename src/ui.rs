@@ -70,7 +70,10 @@ impl Widget for &Test {
         };
         input.render(buf);
         print!("{}", cursor::BlinkingBar);
-        input.draw_inner(&Spans::from(self.words[self.current_word].progress.clone()), buf);
+        input.draw_inner(
+            &Spans::from(self.words[self.current_word].progress.clone()),
+            buf,
+        );
 
         let target_lines: Vec<Spans> = {
             let words =
@@ -179,7 +182,7 @@ impl Widget for &results::Results {
             self.cps.overall * 12f64
         )));
         info_text.extend(Text::from(format!(
-            "Correct Characters: {}",
+            "Correct Keypresses: {}",
             self.accuracy.overall
         )));
 
