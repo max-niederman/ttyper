@@ -12,8 +12,20 @@ With Cargo:
 cargo install ttyper
 ```
 
+## usage
+For usage instructions, you can run `ttyper --help`. Currently available languages are `english100`, `english200`, and `english1000`.
+
+### examples
+
+| Command                         | Test Contents                               |
+| :------------------------------ | ------------------------------------------: |
+| `ttyper`                        | 50 of the 200 most common english words     |
+| `ttyper -w 100`                 | 100 of the 200 most common English words    |
+| `ttyper -w 100 -l english1000`  | 100 of the 1000 most common English words   |
+| `ttyper text.txt`               | contents of `text.txt` split at whitespace  |
+
 ## to-do
 
 - Use per-word frequency data for more realistic tests.
-- Add keywise data to the results UI for "improvement tips."
+- Add keywise data to the results UI.
 - Add WPM graph to results UI.
