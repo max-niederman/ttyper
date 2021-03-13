@@ -17,7 +17,7 @@ For usage instructions, you can run `ttyper --help`. Currently available languag
 
 ### examples
 
-| Command                         | Test Contents                               |
+| command                         | test contents                               |
 | :------------------------------ | ------------------------------------------: |
 | `ttyper`                        | 50 of the 200 most common english words     |
 | `ttyper -w 100`                 | 100 of the 200 most common English words    |
@@ -26,6 +26,7 @@ For usage instructions, you can run `ttyper --help`. Currently available languag
 
 ## to-do
 
+- Write unit tests.
 - Use per-word frequency data for more realistic tests.
 - Add keywise data to the results UI.
 - Add WPM graph to results UI.
