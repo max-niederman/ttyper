@@ -1,5 +1,11 @@
 # ttyper
 
+[![Crates.io](https://img.shields.io/crates/v/ttyper)](https://crates.io/crates/ttyper)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/max-niederman/ttyper/Rust)](https://github.com/max-niederman/ttyper/actions)
+[![Dependency Status](https://img.shields.io/librariesio/release/cargo/ttyper)](https://libraries.io/cargo/ttyper/0.1.5/tree?kind=normal)
+[![GitHub issues](https://img.shields.io/github/issues/max-niederman/ttyper)](https://github.com/max-niederman/ttyper/issues)
+[![License](https://img.shields.io/crates/l/ttyper)](./LICENSE.md)
+
 Ttyper is a terminal-based typing test built with Rust and tui-rs.
 
 ![Recording](./resources/recording.gif)
