@@ -10,9 +10,12 @@ use std::fs;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
 use structopt::StructOpt;
-use termion::event::Key;
-use termion::input::TermRead;
-use termion::raw::IntoRawMode;
+use termion::{
+    input::TermRead,
+    screen::AlternateScreen,
+    raw::IntoRawMode,
+    event::Key
+};
 use tui::{backend::TermionBackend, terminal::Terminal};
 
 #[derive(Debug, StructOpt)]
@@ -34,48 +37,54 @@ struct Opt {
     language: String,
 }
 
+impl Opt {
+    fn gen_contents(&self) -> Vec<String> {
+        match &self.contents {
+            Some(path) => {
+                let file = fs::File::open(path).expect("Error reading language file.");
+                let lines: Vec<String> = io::BufReader::new(file)
+                    .lines()
+                    .filter_map(Result::ok)
+                    .collect();
+                lines
+                    .iter()
+                    .flat_map(|line| line.split_whitespace())
+                    .map(String::from)
+                    .collect()
+            },
+            None => {
+                let language: Vec<String> = {
+                    let path = self.language_file.clone().unwrap_or_else(|| {
+                        config::get_path()
+                            .join("language")
+                            .join(&self.language)
+                    });
+                    let file = fs::File::open(path).expect("Error reading language file.");
+                    io::BufReader::new(file)
+                        .lines()
+                        .filter_map(Result::ok)
+                        .collect()
+                };
+
+                let mut words: Vec<String> = language.into_iter().cycle().take(self.words).collect();
+
+                let mut rng = thread_rng();
+                words.shuffle(&mut rng);
+
+                words
+            }
+        }
+    }
+}
+
 fn main() -> Result<(), io::Error> {
     let opt = Opt::from_args();
 
-    let mut test = Test::new(match opt.contents {
-        Some(path) => {
-            let file = fs::File::open(path).expect("Error reading language file.");
-            let lines: Vec<String> = io::BufReader::new(file)
-                .lines()
-                .filter_map(Result::ok)
-                .collect();
-            lines
-                .iter()
-                .flat_map(|line| line.split_whitespace())
-                .map(String::from)
-                .collect()
-        },
-        None => {
-            let language: Vec<String> = {
-                let path = opt.language_file.clone().unwrap_or_else(|| {
-                    config::get_path()
-                        .join("language")
-                        .join(opt.language.clone())
-                });
-                let file = fs::File::open(path).expect("Error reading language file.");
-                io::BufReader::new(file)
-                    .lines()
-                    .filter_map(Result::ok)
-                    .collect()
-            };
-
-            let mut words: Vec<String> = language.into_iter().cycle().take(opt.words).collect();
-
-            let mut rng = thread_rng();
-            words.shuffle(&mut rng);
-
-            words
-        }
-    });
+    let mut test = Test::new(opt.gen_contents());
 
     let stdin = io::stdin();
     let stdout = io::stdout().into_raw_mode()?;
-    let backend = TermionBackend::new(stdout);
+    let backend = TermionBackend::new(AlternateScreen::from(stdout));
     let mut terminal = Terminal::new(backend)?;
 
     terminal.clear()?;
@@ -110,8 +119,5 @@ fn main() -> Result<(), io::Error> {
     // Wait for keypress
     io::stdin().keys().next();
 
-    // Print newline
-    println!();
-
     Ok(())
-}
+} 
