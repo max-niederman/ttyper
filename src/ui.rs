@@ -127,7 +127,7 @@ impl Widget for &Test {
         };
         let target = Paragraph::new(target_lines).block(
             Block::default()
-                .title(Spans::from(vec![Span::styled("Text", title_style)]))
+                .title(Spans::from(vec![Span::styled("Prompt", title_style)]))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(Color::Green)),
