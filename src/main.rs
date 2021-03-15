@@ -110,5 +110,8 @@ fn main() -> Result<(), io::Error> {
     // Wait for keypress
     io::stdin().keys().next();
 
+    // Print newline
+    println!();
+
     Ok(())
 }
