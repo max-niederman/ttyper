@@ -74,40 +74,48 @@ impl Widget for &Test {
         );
 
         let target_lines: Vec<Spans> = {
+            let progress_ind = self.words[self.current_word].progress.len().min(self.words[self.current_word].text.len());
             let words =
-                iter::empty::<Span>()
+                iter::empty::<Vec<Span>>()
                     .chain(self.words[..self.current_word].iter().map(|w| {
-                        Span::styled(
+                        vec![Span::styled(
                             w.text.clone() + " ",
                             Style::default().fg(match w.progress == w.text {
                                 true => Color::Green,
                                 false => Color::Red,
                             }),
-                        )
+                        )]
                     }))
-                    .chain(iter::once(Span::styled(
-                        self.words[self.current_word].text.clone() + " ",
-                        Style::default()
-                            .fg(
-                                match self.words[self.current_word]
-                                    .text
-                                    .starts_with(&self.words[self.current_word].progress[..])
-                                {
-                                    true => Color::Green,
-                                    false => Color::Red,
-                                },
-                            )
-                            .add_modifier(Modifier::BOLD),
-                    )))
+                    .chain(iter::once(vec![
+                        Span::styled(
+                            self.words[self.current_word].text[..progress_ind].to_string(),
+                            Style::default()
+                                .fg(
+                                    match self.words[self.current_word]
+                                        .text
+                                        .starts_with(&self.words[self.current_word].progress[..])
+                                    {
+                                        true => Color::Green,
+                                        false => Color::Red,
+                                    },
+                                )
+                                .add_modifier(Modifier::BOLD),
+                        ), Span::styled(
+                            self.words[self.current_word].text[progress_ind..].to_string() + " ",
+                            Style::default()
+                                .fg(Color::Yellow)
+                                .add_modifier(Modifier::BOLD),
+                        )
+                    ]))
                     .chain(self.words[self.current_word + 1..].iter().map(|w| {
-                        Span::styled(w.text.clone() + " ", Style::default().fg(Color::Gray))
+                        vec![Span::styled(w.text.clone() + " ", Style::default().fg(Color::Gray))]
                     }));
 
             let mut lines: Vec<Spans> = Vec::new();
             let mut current_line: Vec<Span> = Vec::new();
             let mut current_width = 0;
             for word in words {
-                let word_width = word.width();
+                let word_width: usize = word.iter().map(|s| s.width()).sum();
 
                 if current_width + word_width > chunks[1].width as usize - 2 {
                     current_line.push(Span::raw("\n"));
@@ -116,7 +124,7 @@ impl Widget for &Test {
                     current_width = 0;
                 }
 
-                current_line.push(word);
+                current_line.extend(word);
                 current_width += word_width;
             }
             lines.push(Spans::from(current_line));

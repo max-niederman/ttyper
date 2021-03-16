@@ -1,8 +1,8 @@
 pub mod results;
 
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use std::fmt;
 use std::time::Instant;
-use crossterm::event::{KeyEvent, KeyCode, KeyModifiers};
 
 pub struct TestEvent {
     pub time: Instant,

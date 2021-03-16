@@ -1,10 +1,10 @@
 use super::Test;
 
 use ascii::AsciiChar;
+use crossterm::event::{KeyCode, KeyEvent};
 use std::convert::TryInto;
 use std::fmt;
 use std::num::NonZeroUsize;
-use crossterm::event::{KeyEvent, KeyCode};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Fraction {
