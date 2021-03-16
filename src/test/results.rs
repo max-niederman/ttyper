@@ -50,20 +50,17 @@ impl PartialResults for Test {
     }
 }
 
-#[derive(Debug)]
 pub struct CPSData {
     pub overall: f64,
     pub per_event: Vec<f64>,
     pub per_key: [f64; 256],
 }
 
-#[derive(Debug)]
 pub struct AccuracyData {
     pub overall: Fraction,
     pub per_key: [Fraction; 256],
 }
 
-#[derive(Debug)]
 pub struct Results {
     pub cps: CPSData,
     pub accuracy: AccuracyData,
