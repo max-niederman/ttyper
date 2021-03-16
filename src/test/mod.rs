@@ -55,6 +55,16 @@ impl Test {
     pub fn handle_key(&mut self, key: KeyEvent) {
         let word = self.words.get_mut(self.current_word).unwrap();
 
+        if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('h') {
+            word.events.push(TestEvent {
+                time: Instant::now(),
+                correct: None,
+                key,
+            });
+            word.progress.clear();
+            return;
+        }
+
         match key.code {
             KeyCode::Char(' ') | KeyCode::Char('\n') => {
                 if !word.progress.is_empty() {
@@ -64,21 +74,12 @@ impl Test {
             KeyCode::Backspace => match word.progress.len() {
                 0 => self.last_word(),
                 _ => {
-                    if key.modifiers.contains(KeyModifiers::CONTROL) {
-                        word.events.push(TestEvent {
-                            time: Instant::now(),
-                            correct: Some(!word.text.starts_with(&word.progress[..])),
-                            key,
-                        });
-                        word.progress.pop();
-                    } else {
-                        word.events.push(TestEvent {
-                            time: Instant::now(),
-                            correct: None,
-                            key,
-                        });
-                        word.progress.clear();
-                    }
+                    word.events.push(TestEvent {
+                        time: Instant::now(),
+                        correct: Some(!word.text.starts_with(&word.progress[..])),
+                        key,
+                    });
+                    word.progress.pop();
                 }
             },
             KeyCode::Char(c) => {
