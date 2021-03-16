@@ -83,16 +83,7 @@ impl Opt {
     }
 }
 
-fn exit() -> crossterm::Result<()> {
-    execute!(
-        io::stdout(),
-        cursor::RestorePosition,
-        cursor::Show,
-        terminal::LeaveAlternateScreen,
-    )?;
 
-    Ok(())
-}
 
 fn main() -> crossterm::Result<()> {
     let opt = Opt::from_args();
@@ -107,6 +98,18 @@ fn main() -> crossterm::Result<()> {
         terminal::EnterAlternateScreen,
     )?;
 
+    fn exit() -> crossterm::Result<()> {
+        terminal::disable_raw_mode()?;
+        execute!(
+            io::stdout(),
+            cursor::RestorePosition,
+            cursor::Show,
+            terminal::LeaveAlternateScreen,
+        )?;
+
+        Ok(())
+    }
+
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
@@ -115,7 +118,9 @@ fn main() -> crossterm::Result<()> {
         f.render_widget(&test, f.size());
     })?;
 
+    // Enable raw mode to read keys
     terminal::enable_raw_mode()?;
+
     loop {
         match event::read()? {
             Event::Key(key) => {
