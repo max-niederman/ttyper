@@ -115,7 +115,9 @@ fn main() -> crossterm::Result<()> {
         f.render_widget(&test, f.size());
     })?;
 
+    // Enable raw mode to read keys
     terminal::enable_raw_mode()?;
+
     loop {
         match event::read()? {
             Event::Key(key) => {
@@ -163,6 +165,8 @@ fn main() -> crossterm::Result<()> {
             _ => {}
         }
     }
+    
+    terminal::disable_raw_mode()?;
 
     exit()
 } 
