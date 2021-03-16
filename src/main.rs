@@ -1,4 +1,3 @@
-mod config;
 mod test;
 mod ui;
 
@@ -10,6 +9,7 @@ use std::fs;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
 use structopt::StructOpt;
+use dirs;
 use termion::{
     input::TermRead,
     screen::AlternateScreen,
@@ -55,7 +55,9 @@ impl Opt {
             None => {
                 let language: Vec<String> = {
                     let path = self.language_file.clone().unwrap_or_else(|| {
-                        config::get_path()
+                        dirs::config_dir()
+                            .expect("Couldn't find configuration directory.")
+                            .join("ttyper")
                             .join("language")
                             .join(&self.language)
                     });

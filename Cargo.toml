@@ -1,7 +1,7 @@
 [package]
 name = "ttyper"
 description = "Terminal-based typing test."
-version = "0.1.6"
+version = "0.1.7"
 readme = "README.md"
 repository = "https://github.com/max-niederman/ttyper"
 license = "MIT"
@@ -10,6 +10,7 @@ edition = "2018"
 
 [dependencies]
 structopt = "0.3"
+dirs = "3.0"
 tui = "0.14"
 termion = "1.5"
 ascii = "1.0"
@@ -17,3 +18,6 @@ ascii = "1.0"
 [dependencies.rand]
 version = "0.8"
 features = ["alloc"]
+
+[build-dependencies]
+dirs = "3.0"

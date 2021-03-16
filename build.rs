@@ -1,6 +1,7 @@
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
+use dirs;
 
 fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
     let mut stack = Vec::new();
@@ -41,22 +42,15 @@ fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
 }
 
 fn main() -> std::io::Result<()> {
-    #[cfg(target_os = "linux")]
-    let os_conf_path = env::var_os("HOME").map(|s| Path::new(&s).join(".config"));
-    #[cfg(target_os = "windows")]
-    let os_conf_path = env::var_os("APPDATA").map(|s| Path::new(s));
-    #[cfg(target_os = "macos")]
-    let os_conf_path = env::var_os("HOME").map(|s| Path::new(&s).join(".config"));
-
-    let install_path = os_conf_path
-        .unwrap_or(env::current_dir().expect("Couldn't find a place to install to."))
+    let install_path = dirs::config_dir()
+        .expect("Couldn't find a configuration directory to install to.")
         .join("ttyper");
     fs::create_dir_all(&install_path)?;
 
     let resources_path = env::current_dir()
         .expect("Couldn't find the source directory.")
         .join("resources")
-        .join("config");
+        .join("runtime");
     copy(&resources_path, &install_path)?;
 
     Ok(())
