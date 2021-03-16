@@ -4,7 +4,7 @@ use ascii::AsciiChar;
 use std::convert::TryInto;
 use std::fmt;
 use std::num::NonZeroUsize;
-use termion::event::Key;
+use crossterm::event::{KeyEvent, KeyCode};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Fraction {
@@ -69,17 +69,17 @@ pub struct Results {
     pub accuracy: AccuracyData,
 }
 
-trait FromTermionKey {
-    fn from_key(key: Key) -> Self;
+trait FromTermKey {
+    fn from_key(key: KeyEvent) -> Self;
 }
-impl FromTermionKey for Option<AsciiChar> {
-    fn from_key(key: Key) -> Self {
-        match key {
-            Key::Backspace => Some(AsciiChar::BackSpace),
-            Key::Delete => Some(AsciiChar::DEL),
-            Key::Char(c) => AsciiChar::from_ascii(c).ok(),
-            Key::Null => Some(AsciiChar::Null),
-            Key::Esc => Some(AsciiChar::ESC),
+impl FromTermKey for Option<AsciiChar> {
+    fn from_key(key: KeyEvent) -> Self {
+        match key.code {
+            KeyCode::Backspace => Some(AsciiChar::BackSpace),
+            KeyCode::Delete => Some(AsciiChar::DEL),
+            KeyCode::Char(c) => AsciiChar::from_ascii(c).ok(),
+            KeyCode::Null => Some(AsciiChar::Null),
+            KeyCode::Esc => Some(AsciiChar::ESC),
             _ => None,
         }
     }

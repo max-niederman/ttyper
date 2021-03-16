@@ -10,13 +10,17 @@ use std::io::{self, BufRead};
 use std::path::PathBuf;
 use structopt::StructOpt;
 use dirs;
-use termion::{
-    input::TermRead,
-    screen::AlternateScreen,
-    raw::IntoRawMode,
-    event::Key
+use crossterm::{
+    self,
+    execute,
+    terminal,
+    cursor,
+    event::{self, Event, KeyCode, KeyModifiers}
 };
-use tui::{backend::TermionBackend, terminal::Terminal};
+use tui::{
+    backend::CrosstermBackend,
+    terminal::Terminal
+};
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "ttyper", about = "Terminal-based typing test.")]
@@ -79,14 +83,31 @@ impl Opt {
     }
 }
 
-fn main() -> Result<(), io::Error> {
+fn exit() -> crossterm::Result<()> {
+    execute!(
+        io::stdout(),
+        cursor::RestorePosition,
+        cursor::Show,
+        terminal::LeaveAlternateScreen,
+    )?;
+
+    Ok(())
+}
+
+fn main() -> crossterm::Result<()> {
     let opt = Opt::from_args();
 
     let mut test = Test::new(opt.gen_contents());
 
-    let stdin = io::stdin();
-    let stdout = io::stdout().into_raw_mode()?;
-    let backend = TermionBackend::new(AlternateScreen::from(stdout));
+    let mut stdout = io::stdout();
+    execute!(
+        stdout, 
+        cursor::Hide,
+        cursor::SavePosition, 
+        terminal::EnterAlternateScreen,
+    )?;
+
+    let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
     terminal.clear()?;
@@ -94,21 +115,38 @@ fn main() -> Result<(), io::Error> {
         f.render_widget(&test, f.size());
     })?;
 
-    for key in stdin.keys() {
-        let key = key.unwrap();
-        match key {
-            Key::Esc => break,
-            Key::Ctrl('c') => return Ok(()),
-            _ => test.handle_key(key),
-        }
+    terminal::enable_raw_mode()?;
+    loop {
+        match event::read()? {
+            Event::Key(key) => {
+                if key.modifiers.contains(KeyModifiers::CONTROL) {
+                    match key.code {
+                        KeyCode::Char('c') => return exit(),
+                        _ => {}
+                    }
+                }
 
-        if test.complete {
-            break;
-        }
+                match key.code {
+                    KeyCode::Esc => break,
+                    _ => test.handle_key(key)
+                }
 
-        terminal.draw(|f| {
-            f.render_widget(&test, f.size());
-        })?;
+                if test.complete {
+                    break;
+                }
+
+                terminal.draw(|f| {
+                    f.render_widget(&test, f.size());
+                })?;
+            },
+            Event::Resize(_, _) => {
+                terminal.draw(|f| {
+                    f.render_widget(&test, f.size());
+                })?;
+            },
+            _ => {}
+        }
+            
     }
 
     // Draw results
@@ -119,7 +157,12 @@ fn main() -> Result<(), io::Error> {
     })?;
 
     // Wait for keypress
-    io::stdin().keys().next();
+    loop {
+        match event::read()? {
+            Event::Key(_) => break,
+            _ => {}
+        }
+    }
 
-    Ok(())
+    exit()
 } 

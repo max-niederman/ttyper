@@ -1,7 +1,6 @@
 use super::test::{results, Test};
 
 use std::iter;
-use termion::cursor;
 use tui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
@@ -69,7 +68,6 @@ impl Widget for &Test {
             area: chunks[0],
         };
         input.render(buf);
-        print!("{}", cursor::BlinkingBar);
         input.draw_inner(
             &Spans::from(self.words[self.current_word].progress.clone()),
             buf,

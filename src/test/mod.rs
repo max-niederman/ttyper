@@ -2,11 +2,11 @@ pub mod results;
 
 use std::fmt;
 use std::time::Instant;
-use termion::event::Key;
+use crossterm::event::{KeyEvent, KeyCode, KeyModifiers};
 
 pub struct TestEvent {
     pub time: Instant,
-    pub key: Key,
+    pub key: KeyEvent,
     pub correct: Option<bool>,
 }
 
@@ -52,36 +52,36 @@ impl Test {
         }
     }
 
-    pub fn handle_key(&mut self, key: Key) {
+    pub fn handle_key(&mut self, key: KeyEvent) {
         let word = self.words.get_mut(self.current_word).unwrap();
 
-        match key {
-            Key::Char(' ') | Key::Char('\n') => {
+        match key.code {
+            KeyCode::Char(' ') | KeyCode::Char('\n') => {
                 if !word.progress.is_empty() {
                     self.next_word();
                 }
             }
-            Key::Backspace => match word.progress.len() {
+            KeyCode::Backspace => match word.progress.len() {
                 0 => self.last_word(),
                 _ => {
-                    word.events.push(TestEvent {
-                        time: Instant::now(),
-                        correct: Some(!word.text.starts_with(&word.progress[..])),
-                        key,
-                    });
-                    word.progress.pop();
+                    if key.modifiers.contains(KeyModifiers::CONTROL) {
+                        word.events.push(TestEvent {
+                            time: Instant::now(),
+                            correct: Some(!word.text.starts_with(&word.progress[..])),
+                            key,
+                        });
+                        word.progress.pop();
+                    } else {
+                        word.events.push(TestEvent {
+                            time: Instant::now(),
+                            correct: None,
+                            key,
+                        });
+                        word.progress.clear();
+                    }
                 }
             },
-            // At least on Linux, Ctrl-Backspace is mapped to Ctrl('h')
-            Key::Ctrl('\x08') | Key::Ctrl('h') => {
-                word.events.push(TestEvent {
-                    time: Instant::now(),
-                    correct: None,
-                    key,
-                });
-                word.progress.clear();
-            }
-            Key::Char(c) => {
+            KeyCode::Char(c) => {
                 word.progress.push(c);
                 word.events.push(TestEvent {
                     time: Instant::now(),
