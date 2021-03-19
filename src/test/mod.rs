@@ -66,7 +66,7 @@ impl Test {
         }
 
         match key.code {
-            KeyCode::Char(' ') | KeyCode::Char('\n') => {
+            KeyCode::Char(' ') | KeyCode::Enter => {
                 if !word.progress.is_empty() {
                     self.next_word();
                 }
