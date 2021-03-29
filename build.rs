@@ -1,7 +1,6 @@
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
-use dirs;
 
 fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
     let mut stack = Vec::new();
@@ -29,11 +28,9 @@ fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
             let path = entry.path();
             if path.is_dir() {
                 stack.push(path);
-            } else {
-                if let Some(filename) = path.file_name() {
-                    let dest_path = dest.join(filename);
-                    fs::copy(&path, &dest_path)?;
-                }
+            } else if let Some(filename) = path.file_name() {
+                let dest_path = dest.join(filename);
+                fs::copy(&path, &dest_path)?;
             }
         }
     }

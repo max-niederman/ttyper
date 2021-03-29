@@ -3,24 +3,18 @@ mod ui;
 
 use test::{results::Results, Test};
 
+use crossterm::{
+    self, cursor,
+    event::{self, Event, KeyCode, KeyModifiers},
+    execute, terminal,
+};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::fs;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
 use structopt::StructOpt;
-use dirs;
-use crossterm::{
-    self,
-    execute,
-    terminal,
-    cursor,
-    event::{self, Event, KeyCode, KeyModifiers}
-};
-use tui::{
-    backend::CrosstermBackend,
-    terminal::Terminal
-};
+use tui::{backend::CrosstermBackend, terminal::Terminal};
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "ttyper", about = "Terminal-based typing test.")]
@@ -55,7 +49,7 @@ impl Opt {
                     .flat_map(|line| line.split_whitespace())
                     .map(String::from)
                     .collect()
-            },
+            }
             None => {
                 let language: Vec<String> = {
                     let path = self.language_file.clone().unwrap_or_else(|| {
@@ -72,7 +66,8 @@ impl Opt {
                         .collect()
                 };
 
-                let mut words: Vec<String> = language.into_iter().cycle().take(self.words).collect();
+                let mut words: Vec<String> =
+                    language.into_iter().cycle().take(self.words).collect();
 
                 let mut rng = thread_rng();
                 words.shuffle(&mut rng);
@@ -83,8 +78,6 @@ impl Opt {
     }
 }
 
-
-
 fn main() -> crossterm::Result<()> {
     let opt = Opt::from_args();
 
@@ -92,9 +85,9 @@ fn main() -> crossterm::Result<()> {
 
     let mut stdout = io::stdout();
     execute!(
-        stdout, 
+        stdout,
         cursor::Hide,
-        cursor::SavePosition, 
+        cursor::SavePosition,
         terminal::EnterAlternateScreen,
     )?;
 
@@ -125,15 +118,12 @@ fn main() -> crossterm::Result<()> {
         match event::read()? {
             Event::Key(key) => {
                 if key.modifiers.contains(KeyModifiers::CONTROL) {
-                    match key.code {
-                        KeyCode::Char('c') => return exit(),
-                        _ => {}
-                    }
+                    if let KeyCode::Char('c') = key.code { return exit() };
                 }
 
                 match key.code {
                     KeyCode::Esc => break,
-                    _ => test.handle_key(key)
+                    _ => test.handle_key(key),
                 }
 
                 if test.complete {
@@ -143,15 +133,14 @@ fn main() -> crossterm::Result<()> {
                 terminal.draw(|f| {
                     f.render_widget(&test, f.size());
                 })?;
-            },
+            }
             Event::Resize(_, _) => {
                 terminal.draw(|f| {
                     f.render_widget(&test, f.size());
                 })?;
-            },
+            }
             _ => {}
         }
-            
     }
 
     // Draw results
@@ -163,11 +152,8 @@ fn main() -> crossterm::Result<()> {
 
     // Wait for keypress
     loop {
-        match event::read()? {
-            Event::Key(_) => break,
-            _ => {}
-        }
+        if let Event::Key(_) = event::read()? { break };
     }
 
     exit()
-} 
+}

@@ -45,7 +45,7 @@ impl PartialResults for Test {
                 .words
                 .len()
                 .try_into()
-                .unwrap_or(NonZeroUsize::new(1).unwrap()),
+                .unwrap_or_else(|_| NonZeroUsize::new(1).unwrap()),
         }
     }
 }
@@ -108,10 +108,10 @@ impl From<&Test> for Results {
                     if let Some(event_cps) = event_cps {
                         cps.per_event.push(event_cps);
 
-                        Option::<AsciiChar>::from_key(event.key).map(|ac| {
+                        if let Some(ac) = Option::<AsciiChar>::from_key(event.key) {
                             cps.per_key[ac as usize] += event_cps;
                             key_count[ac as usize] += 1;
-                        });
+                        }
                     }
                 }
                 cps.per_key
