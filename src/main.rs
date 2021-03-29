@@ -118,7 +118,9 @@ fn main() -> crossterm::Result<()> {
         match event::read()? {
             Event::Key(key) => {
                 if key.modifiers.contains(KeyModifiers::CONTROL) {
-                    if let KeyCode::Char('c') = key.code { return exit() };
+                    if let KeyCode::Char('c') = key.code {
+                        return exit();
+                    };
                 }
 
                 match key.code {
@@ -152,7 +154,9 @@ fn main() -> crossterm::Result<()> {
 
     // Wait for keypress
     loop {
-        if let Event::Key(_) = event::read()? { break };
+        if let Event::Key(_) = event::read()? {
+            break;
+        };
     }
 
     exit()

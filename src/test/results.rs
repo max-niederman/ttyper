@@ -50,7 +50,7 @@ impl PartialResults for Test {
     }
 }
 
-pub struct CPSData {
+pub struct CpsData {
     pub overall: f64,
     pub per_event: Vec<f64>,
     pub per_key: [f64; 256],
@@ -62,7 +62,7 @@ pub struct AccuracyData {
 }
 
 pub struct Results {
-    pub cps: CPSData,
+    pub cps: CpsData,
     pub accuracy: AccuracyData,
 }
 
@@ -86,7 +86,7 @@ impl From<&Test> for Results {
     fn from(test: &Test) -> Self {
         Self {
             cps: {
-                let mut cps = CPSData {
+                let mut cps = CpsData {
                     overall: 0f64,
                     per_event: Vec::new(),
                     per_key: [0f64; 256],

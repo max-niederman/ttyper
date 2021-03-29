@@ -6,14 +6,43 @@ on:
       - "v*"
 
 jobs:
-  tagged-release:
-    name: "Tagged Release"
-    runs-on: "ubuntu-latest"
+  github-release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - uses: actions/checkout@v2
+      - uses: marvinpinto/action-automatic-releases@latest
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
           files: |
             LICENSE.md
+
+  aur:
+    name: AUR
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-arch
+          version: latest
+          use-tool-cache: true 
+      - name: Make PKGBUILD
+        run: cargo arch --build false
+      - name: Publish
+        uses: KSXGitHub/github-actions-deploy-aur@v2.2.3
+        with:
+          pkgname: ttyper
+          pkgbuild: ./PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          ssh_keyscan_types: rsa,dsa,ecdsa,ed25519
