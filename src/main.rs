@@ -12,6 +12,7 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::fs;
 use std::io::{self, BufRead};
+use std::num;
 use std::path::PathBuf;
 use structopt::StructOpt;
 use tui::{backend::CrosstermBackend, terminal::Terminal};
@@ -26,7 +27,7 @@ struct Opt {
     debug: bool,
 
     #[structopt(short, long, default_value = "50")]
-    words: usize,
+    words: num::NonZeroUsize,
 
     #[structopt(long, parse(from_os_str))]
     language_file: Option<PathBuf>,
@@ -66,8 +67,11 @@ impl Opt {
                         .collect()
                 };
 
-                let mut words: Vec<String> =
-                    language.into_iter().cycle().take(self.words).collect();
+                let mut words: Vec<String> = language
+                    .into_iter()
+                    .cycle()
+                    .take(self.words.into())
+                    .collect();
 
                 let mut rng = thread_rng();
                 words.shuffle(&mut rng);

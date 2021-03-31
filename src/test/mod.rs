@@ -102,7 +102,7 @@ impl Test {
                     });
                     word.progress.pop();
                 }
-            },
+            }
             KeyCode::Char(c) => {
                 word.progress.push(c);
                 word.events.push(TestEvent {
