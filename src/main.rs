@@ -81,7 +81,16 @@ impl Opt {
 fn main() -> crossterm::Result<()> {
     let opt = Opt::from_args();
 
-    let mut test = Test::new(opt.gen_contents());
+    let mut test = {
+        let contents = opt.gen_contents();
+
+        if contents.is_empty() {
+            println!("Test contents were empty. Exiting...");
+            return Ok(());
+        };
+
+        Test::new(contents)
+    };
 
     let mut stdout = io::stdout();
     execute!(
@@ -146,7 +155,7 @@ fn main() -> crossterm::Result<()> {
     }
 
     // Draw results
-    let results = Results::from(&test);
+    let results = Results::from(test);
     terminal.clear()?;
     terminal.draw(|f| {
         f.render_widget(&results, f.size());

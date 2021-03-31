@@ -10,6 +10,16 @@ pub struct TestEvent {
     pub correct: Option<bool>,
 }
 
+impl Default for TestEvent {
+    fn default() -> Self {
+        Self {
+            time: Instant::now(),
+            key: KeyEvent::from(KeyCode::Null),
+            correct: None,
+        }
+    }
+}
+
 impl fmt::Debug for TestEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TestEvent")
@@ -53,9 +63,13 @@ impl Test {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) {
-        let word = self.words.get_mut(self.current_word).unwrap();
-
         if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('h') {
+            if self.words[self.current_word].progress.is_empty() {
+                self.last_word();
+            }
+
+            let word = &mut self.words[self.current_word];
+
             word.events.push(TestEvent {
                 time: Instant::now(),
                 correct: None,
@@ -65,15 +79,22 @@ impl Test {
             return;
         }
 
+        let word = &mut self.words[self.current_word];
         match key.code {
             KeyCode::Char(' ') | KeyCode::Enter => {
                 if !word.progress.is_empty() {
+                    word.events.push(TestEvent {
+                        time: Instant::now(),
+                        correct: Some(word.text == word.progress),
+                        key,
+                    });
                     self.next_word();
                 }
             }
-            KeyCode::Backspace => match word.progress.len() {
-                0 => self.last_word(),
-                _ => {
+            KeyCode::Backspace => {
+                if word.progress.is_empty() {
+                    self.last_word();
+                } else {
                     word.events.push(TestEvent {
                         time: Instant::now(),
                         correct: Some(!word.text.starts_with(&word.progress[..])),

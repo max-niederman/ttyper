@@ -82,8 +82,9 @@ impl FromTermKey for Option<AsciiChar> {
     }
 }
 
-impl From<&Test> for Results {
-    fn from(test: &Test) -> Self {
+impl From<Test> for Results {
+    fn from(test: Test) -> Self {
+        let events = test.words.iter().flat_map(|w| w.events.iter());
         Self {
             cps: {
                 let mut cps = CpsData {
@@ -92,23 +93,20 @@ impl From<&Test> for Results {
                     per_key: [0f64; 256],
                 };
 
-                let mut events = test.words.iter().flat_map(|w| w.events.iter());
-
-                let mut last = events
-                    .next()
-                    .expect("The test was completed without any events.");
                 let mut key_count = [0usize; 256];
-                for event in events {
-                    let event_cps = event
+
+                // NOTE: this should really be optimized to use less than O(n) space
+                let event_vec: Vec<&super::TestEvent> = events.clone().collect();
+                for win in event_vec.windows(2) {
+                    let event_cps = win[1]
                         .time
-                        .checked_duration_since(last.time)
+                        .checked_duration_since(win[0].time)
                         .map(|d| d.as_secs_f64().recip());
-                    last = &event;
 
                     if let Some(event_cps) = event_cps {
                         cps.per_event.push(event_cps);
 
-                        if let Some(ac) = Option::<AsciiChar>::from_key(event.key) {
+                        if let Some(ac) = Option::<AsciiChar>::from_key(win[1].key) {
                             cps.per_key[ac as usize] += event_cps;
                             key_count[ac as usize] += 1;
                         }
@@ -130,9 +128,7 @@ impl From<&Test> for Results {
                     per_key: [Fraction::default(); 256],
                 };
 
-                test.words
-                    .iter()
-                    .flat_map(|w| w.events.iter())
+                events
                     .filter(|event| event.correct.is_some())
                     .for_each(|event| {
                         if let Some(ch) = Option::<AsciiChar>::from_key(event.key) {
