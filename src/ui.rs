@@ -166,7 +166,7 @@ impl Widget for &results::Results {
             .split(chunks[0]);
 
         let exit = Span::styled(
-            "Press any key to finish or 'r' to restart",
+            "Press any key to finish or 'r' for a another test.",
             Style::default()
                 .fg(Color::Gray)
                 .add_modifier(Modifier::ITALIC),

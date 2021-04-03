@@ -82,16 +82,7 @@ impl Opt {
     }
 }
 
-fn test(contents: Vec<String>) -> crossterm::Result<()> {
-    let mut test = {
-        if contents.is_empty() {
-            println!("Test contents were empty. Exiting...");
-            return Ok(());
-        };
-
-        Test::new(contents)
-    };
-
+fn run_test(mut test: Test) -> crossterm::Result<bool> {
     let mut stdout = io::stdout();
     execute!(
         stdout,
@@ -116,7 +107,7 @@ fn test(contents: Vec<String>) -> crossterm::Result<()> {
             Event::Key(key) => {
                 if key.modifiers.contains(KeyModifiers::CONTROL) {
                     if let KeyCode::Char('c') = key.code {
-                        return exit();
+                        return Ok(false);
                     };
                 }
 
@@ -148,7 +139,7 @@ fn test(contents: Vec<String>) -> crossterm::Result<()> {
     terminal.draw(|f| {
         f.render_widget(&results, f.size());
     })?;
-    Ok(())
+    Ok(true)
 }
 
 fn exit() -> crossterm::Result<()> {
@@ -164,15 +155,24 @@ fn exit() -> crossterm::Result<()> {
 
 fn main() -> crossterm::Result<()> {
     let opt = Opt::from_args();
-    test(opt.gen_contents())?;
-    // Wait for keypress
+
     loop {
-        match event::read()? {
-            Event::Key(KeyEvent {
-                code: KeyCode::Char('r'),
-                modifiers: KeyModifiers::NONE,
-            }) => test(opt.gen_contents())?,
-            _ => break,
+        let contents = opt.gen_contents();
+        if contents.is_empty() {
+            println!("Test contents were empty. Exiting...");
+            return Ok(());
+        };
+
+        if run_test(Test::new(contents))? {
+            match event::read()? {
+                Event::Key(KeyEvent {
+                    code: KeyCode::Char('r'),
+                    modifiers: KeyModifiers::NONE,
+                }) => (),
+                _ => break,
+            }
+        } else {
+            return exit();
         }
     }
     exit()
