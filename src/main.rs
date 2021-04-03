@@ -5,7 +5,7 @@ use test::{results::Results, Test};
 
 use crossterm::{
     self, cursor,
-    event::{self, Event, KeyCode, KeyModifiers},
+    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
     execute, terminal,
 };
 use rand::seq::SliceRandom;
@@ -82,12 +82,8 @@ impl Opt {
     }
 }
 
-fn main() -> crossterm::Result<()> {
-    let opt = Opt::from_args();
-
+fn test(contents: Vec<String>) -> crossterm::Result<()> {
     let mut test = {
-        let contents = opt.gen_contents();
-
         if contents.is_empty() {
             println!("Test contents were empty. Exiting...");
             return Ok(());
@@ -103,18 +99,6 @@ fn main() -> crossterm::Result<()> {
         cursor::SavePosition,
         terminal::EnterAlternateScreen,
     )?;
-
-    fn exit() -> crossterm::Result<()> {
-        terminal::disable_raw_mode()?;
-        execute!(
-            io::stdout(),
-            cursor::RestorePosition,
-            cursor::Show,
-            terminal::LeaveAlternateScreen,
-        )?;
-
-        Ok(())
-    }
 
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
@@ -164,13 +148,32 @@ fn main() -> crossterm::Result<()> {
     terminal.draw(|f| {
         f.render_widget(&results, f.size());
     })?;
+    Ok(())
+}
 
+fn exit() -> crossterm::Result<()> {
+    terminal::disable_raw_mode()?;
+    execute!(
+        io::stdout(),
+        cursor::RestorePosition,
+        cursor::Show,
+        terminal::LeaveAlternateScreen,
+    )?;
+    Ok(())
+}
+
+fn main() -> crossterm::Result<()> {
+    let opt = Opt::from_args();
+    test(opt.gen_contents())?;
     // Wait for keypress
     loop {
-        if let Event::Key(_) = event::read()? {
-            break;
-        };
+        match event::read()? {
+            Event::Key(KeyEvent {
+                code: KeyCode::Char('r'),
+                modifiers: KeyModifiers::NONE,
+            }) => test(opt.gen_contents())?,
+            _ => break,
+        }
     }
-
     exit()
 }
