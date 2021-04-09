@@ -90,7 +90,7 @@ impl Widget for &Test {
                 }))
                 .chain(iter::once(vec![
                     Span::styled(
-                        self.words[self.current_word].text[..progress_ind].to_string(),
+                        self.words[self.current_word].text.chars().take(progress_ind).collect::<String>(),
                         Style::default()
                             .fg(
                                 match self.words[self.current_word]
@@ -104,7 +104,7 @@ impl Widget for &Test {
                             .add_modifier(Modifier::BOLD),
                     ),
                     Span::styled(
-                        self.words[self.current_word].text[progress_ind..].to_string() + " ",
+                        self.words[self.current_word].text.chars().skip(progress_ind).collect::<String>() + " ",
                         Style::default()
                             .fg(Color::Yellow)
                             .add_modifier(Modifier::BOLD),
