@@ -25,20 +25,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/install@v0.1
-        with:
-          crate: cargo-arch
-          version: latest
-          use-tool-cache: true 
-      - name: Make PKGBUILD
-        run: cargo arch --build false
-      - name: Publish
-        uses: KSXGitHub/github-actions-deploy-aur@v2.2.3
+      - uses: KSXGitHub/github-actions-deploy-aur@v2.2.3
         with:
           pkgname: ttyper
           pkgbuild: ./PKGBUILD
