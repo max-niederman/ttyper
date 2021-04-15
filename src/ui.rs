@@ -9,15 +9,15 @@ use tui::{
     widgets::{Block, BorderType, Borders, Paragraph, Widget},
 };
 
+#[derive(Clone)]
 struct SizedBlock<'a> {
     block: Block<'a>,
     area: Rect,
 }
 
 impl SizedBlock<'_> {
-    fn render(&self, buf: &mut Buffer) {
-        // Lifetimes are too difficult for me to understand I guess
-        self.block.clone().render(self.area, buf)
+    fn render(self, buf: &mut Buffer) {
+        self.block.render(self.area, buf)
     }
 }
 
@@ -67,11 +67,11 @@ impl Widget for &Test {
                 .border_style(Style::default().fg(Color::Cyan)),
             area: chunks[0],
         };
-        input.render(buf);
         input.draw_inner(
             &Spans::from(self.words[self.current_word].progress.clone()),
             buf,
         );
+        input.render(buf);
 
         let target_lines: Vec<Spans> = {
             let progress_ind = self.words[self.current_word]

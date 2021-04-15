@@ -125,9 +125,8 @@ impl Test {
         if self.current_word == self.words.len() - 1 {
             self.complete = true;
             self.current_word = 0;
-            return;
+        } else {
+            self.current_word += 1;
         }
-
-        self.current_word += 1;
     }
 }
