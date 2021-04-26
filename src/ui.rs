@@ -1,5 +1,7 @@
 use super::test::{results, Test};
 
+use ascii::AsciiChar;
+use results::Fraction;
 use std::iter;
 use tui::{
     buffer::Buffer,
@@ -206,6 +208,31 @@ impl Widget for &results::Results {
             "Correct Keypresses: {}",
             self.accuracy.overall
         )));
+
+        // get top 5 worst keys
+        let mut worst_key_display_str = String::from("Worst Keys:");
+        let mut key_and_cps_list: Vec<(char, f64)> = Vec::new();
+        for i in 0..256 {
+            let temp = self.cps.per_key[i];
+            let ascii_char = i as u8 as char;
+            if temp.is_nan() || ascii_char == AsciiChar::BackSpace {
+                continue;
+            }
+            key_and_cps_list.push((ascii_char, temp));
+        }
+        key_and_cps_list.sort_by(|a, b| {
+            let f1 = a.1;
+            let f2 = b.1;
+            f1.partial_cmp(&f2).unwrap()
+        });
+        for key_and_cps_pair in key_and_cps_list[0..std::cmp::min(key_and_cps_list.len(), 5)].iter()
+        {
+            worst_key_display_str = format!(
+                "{}\n- '{}' at {:.2} cps",
+                worst_key_display_str, key_and_cps_pair.0, key_and_cps_pair.1
+            );
+        }
+        info_text.extend(Text::from(worst_key_display_str));
 
         let info = Paragraph::new(info_text).block(
             Block::default()

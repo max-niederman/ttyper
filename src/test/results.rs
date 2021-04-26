@@ -6,7 +6,7 @@ use std::convert::TryInto;
 use std::fmt;
 use std::num::NonZeroUsize;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Fraction {
     numerator: usize,
     denominator: NonZeroUsize,
