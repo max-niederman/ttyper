@@ -1,6 +1,7 @@
 use super::test::{results, Test};
 
-use ascii::AsciiChar;
+use crossterm::event::KeyCode;
+use crossterm::event::KeyEvent;
 use results::Fraction;
 use std::iter;
 use tui::{
@@ -209,28 +210,34 @@ impl Widget for &results::Results {
             self.accuracy.overall
         )));
 
-        // get top 5 worst keys
+        // worst keys
         let mut worst_key_display_str = String::from("Worst Keys:");
-        let mut key_and_cps_list: Vec<(char, f64)> = Vec::new();
-        for i in 0..256 {
-            let temp = self.cps.per_key[i];
-            let ascii_char = i as u8 as char;
-            if temp.is_nan() || ascii_char == AsciiChar::BackSpace {
-                continue;
+        let mut worst_keys: Vec<(&KeyEvent, &Fraction)> = self.accuracy.per_key.iter().collect();
+
+        // remove all non chars from the vec
+        worst_keys.retain(|(&key, _)| {
+            if let KeyCode::Char(_) = key.code {
+                return true;
             }
-            key_and_cps_list.push((ascii_char, temp));
-        }
-        key_and_cps_list.sort_by(|a, b| {
-            let f1 = a.1;
-            let f2 = b.1;
-            f1.partial_cmp(&f2).unwrap()
+            false
         });
-        for key_and_cps_pair in key_and_cps_list[0..std::cmp::min(key_and_cps_list.len(), 5)].iter()
-        {
-            worst_key_display_str = format!(
-                "{}\n- '{}' at {:.2} cps",
-                worst_key_display_str, key_and_cps_pair.0, key_and_cps_pair.1
-            );
+
+        // Sort by fraction as float
+        worst_keys.sort_by(|key_a, key_b| {
+            let a_wpm = f64::from(*key_a.1);
+            let b_wpm = f64::from(*key_b.1);
+            a_wpm.partial_cmp(&b_wpm).unwrap()
+        });
+
+        for (key, wpm) in worst_keys.iter().take(std::cmp::min(worst_keys.len(), 5)) {
+            if let KeyCode::Char(key_as_char) = key.code {
+                worst_key_display_str = format!(
+                    "{}\n- {:?} at {:.2}% accuracy",
+                    worst_key_display_str,
+                    key_as_char,
+                    f64::from(**wpm) * 100.0
+                );
+            }
         }
         info_text.extend(Text::from(worst_key_display_str));
 

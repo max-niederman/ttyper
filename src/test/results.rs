@@ -4,7 +4,7 @@ use crossterm::event::KeyEvent;
 use std::collections::HashMap;
 use std::fmt;
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug)]
 pub struct Fraction {
     pub numerator: usize,
     pub denominator: usize,
