@@ -9,15 +9,9 @@ license = "MIT"
 authors = ["Max Niederman <max@maxniederman.com>"]
 edition = "2018"
 
-[package.metadata.arch]
-arch = ["any"]
-makedepends = ["cargo"]
-provides = ["ttyper"]
-
 [dependencies]
 structopt = "0.3"
 dirs = "3.0"
-ascii = "1.0"
 crossterm = "0.19"
 
 [dependencies.tui]
