@@ -5,8 +5,9 @@ use tui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
+    symbols::Marker,
     text::{Span, Spans, Text},
-    widgets::{Block, BorderType, Borders, Paragraph, Widget},
+    widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType, Paragraph, Widget},
 };
 
 #[derive(Clone)]
@@ -215,5 +216,49 @@ impl Widget for &results::Results {
                 .border_style(Style::default().fg(Color::Cyan)),
         );
         info.render(res_chunks[0], buf);
+
+        let max_wpm_rounded: u32 = self
+            .cps
+            .per_event
+            .iter()
+            .cloned()
+            .fold(0. / 0., f64::max)
+            .round() as u32;
+        let mut wpm_data_over_time: Vec<(f64, f64)> = Vec::new();
+        for (time, wpm) in self.cps.per_event.iter().enumerate() {
+            let mut cur_overall = self.cps.per_event[0..=time]
+                .iter()
+                .fold(0f64, |acc, c| acc + c)
+                / self.cps.per_event[0..=time].len() as f64;
+            cur_overall = cur_overall * 12f64 * f64::from(self.accuracy.overall);
+            wpm_data_over_time.push((time as f64, cur_overall));
+        }
+        let datasets = vec![Dataset::default()
+            .name("WPM Over Time")
+            .marker(Marker::Dot)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(Color::Cyan))
+            .data(&wpm_data_over_time)];
+
+        let mut wpm_label_strs: Vec<String> = Vec::new();
+        for wpm_step in (0..max_wpm_rounded as u32).step_by(5) {
+            let label = &format!("{}", wpm_step);
+            wpm_label_strs.push(label.clone());
+        }
+
+        let wpm_chart = Chart::new(datasets)
+            .block(Block::default().title("Chart"))
+            .x_axis(
+                Axis::default()
+                    .title(Span::styled("Time", Style::default().fg(Color::Cyan)))
+                    .bounds([0.0, self.cps.per_event.len() as f64]),
+            )
+            .y_axis(
+                Axis::default()
+                    .title(Span::styled("WPM", Style::default().fg(Color::Gray)))
+                    .bounds([0.0, max_wpm_rounded as f64])
+                    .labels(wpm_label_strs.iter().cloned().map(Span::from).collect()),
+            );
+        wpm_chart.render(res_chunks[1], buf);
     }
 }
