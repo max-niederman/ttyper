@@ -193,53 +193,45 @@ impl Widget for &results::Results {
                 .fg(Color::Cyan),
         );
 
-        info_text.extend(Text::from(format!(
-            "Adjusted WPM: {:.1}",
-            self.cps.overall * 12f64 * f64::from(self.accuracy.overall)
-        )));
-        info_text.extend(Text::from(format!(
-            "Accuracy: {:.1}%",
-            f64::from(self.accuracy.overall) * 100f64
-        )));
-        info_text.extend(Text::from(format!(
-            "Raw WPM: {:.1}",
-            self.cps.overall * 12f64
-        )));
-        info_text.extend(Text::from(format!(
-            "Correct Keypresses: {}",
-            self.accuracy.overall
-        )));
+        info_text.extend(vec![
+            Spans::from(format!(
+                "Adjusted WPM: {:.1}",
+                self.cps.overall * 12f64 * f64::from(self.accuracy.overall)
+            )),
+            Spans::from(format!(
+                "Accuracy: {:.1}%",
+                f64::from(self.accuracy.overall) * 100f64
+            )),
+            Spans::from(format!("Raw WPM: {:.1}", self.cps.overall * 12f64)),
+            Spans::from(format!("Correct Keypresses: {}", self.accuracy.overall)),
+        ]);
 
-        // worst keys
-        let mut worst_key_display_str = String::from("Worst Keys:");
-        let mut worst_keys: Vec<(&KeyEvent, &Fraction)> = self.accuracy.per_key.iter().collect();
+        let mut worst_keys: Vec<(&KeyEvent, &Fraction)> = self
+            .accuracy
+            .per_key
+            .iter()
+            .filter(|(key, _)| matches!(key.code, KeyCode::Char(_)))
+            .collect();
+        worst_keys.sort_unstable_by(|a, b| b.1.cmp(a.1));
 
-        // remove all non chars from the vec
-        worst_keys.retain(|(&key, _)| {
-            if let KeyCode::Char(_) = key.code {
-                return true;
-            }
-            false
-        });
-
-        // Sort by fraction as float
-        worst_keys.sort_by(|key_a, key_b| {
-            let a_wpm = f64::from(*key_a.1);
-            let b_wpm = f64::from(*key_b.1);
-            a_wpm.partial_cmp(&b_wpm).unwrap()
-        });
-
-        for (key, wpm) in worst_keys.iter().take(std::cmp::min(worst_keys.len(), 5)) {
-            if let KeyCode::Char(key_as_char) = key.code {
-                worst_key_display_str = format!(
-                    "{}\n- {:?} at {:.2}% accuracy",
-                    worst_key_display_str,
-                    key_as_char,
-                    f64::from(**wpm) * 100.0
-                );
-            }
-        }
-        info_text.extend(Text::from(worst_key_display_str));
+        info_text.extend(iter::once(Spans::from("Worst Keys:")));
+        info_text.extend(
+            worst_keys
+                .iter()
+                .take(5)
+                .filter_map(|(key, acc)| {
+                    if let KeyCode::Char(character) = key.code {
+                        Some(format!(
+                            "- {} at {:.1}% accuracy",
+                            character,
+                            f64::from(**acc) * 100.0,
+                        ))
+                    } else {
+                        None
+                    }
+                })
+                .map(Spans::from),
+        );
 
         let info = Paragraph::new(info_text).block(
             Block::default()
