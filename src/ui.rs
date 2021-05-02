@@ -212,7 +212,7 @@ impl Widget for &results::Results {
             .iter()
             .filter(|(key, _)| matches!(key.code, KeyCode::Char(_)))
             .collect();
-        worst_keys.sort_unstable_by(|a, b| b.1.cmp(a.1));
+        worst_keys.sort_unstable_by_key(|x| x.1);
 
         info_text.extend(iter::once(Spans::from("Worst Keys:")));
         info_text.extend(
