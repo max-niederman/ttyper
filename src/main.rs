@@ -45,10 +45,7 @@ impl Opt {
                     .lines()
                     .filter_map(Result::ok)
                     .collect();
-                lines
-                    .iter()
-                    .map(String::from)
-                    .collect()
+                lines.iter().map(String::from).collect()
             }
             None => {
                 let language: Vec<String> = {
