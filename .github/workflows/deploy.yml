@@ -75,6 +75,8 @@ jobs:
           command: build
           args: --release --locked --target ${{ matrix.target }}
           use-cross: ${{ matrix.os == 'ubuntu-latest' }}
+        env:
+          NO_RESOURCES: true
 
       - name: Post Build | Prepare Artifacts [Windows]
         if: matrix.os == 'windows-latest'
