@@ -83,12 +83,21 @@ impl Test {
         match key.code {
             KeyCode::Char(' ') | KeyCode::Enter => {
                 if !word.progress.is_empty() {
-                    word.events.push(TestEvent {
-                        time: Instant::now(),
-                        correct: Some(word.text == word.progress),
-                        key,
-                    });
-                    self.next_word();
+                    if word.text.chars().nth(word.progress.len()) != Some(' ') {
+                        word.events.push(TestEvent {
+                            time: Instant::now(),
+                            correct: Some(word.text == word.progress),
+                            key,
+                        });
+                        self.next_word();
+                    } else {
+                        word.progress.push(' ');
+                        word.events.push(TestEvent {
+                            time: Instant::now(),
+                            correct: Some(true),
+                            key,
+                        })
+                    }
                 }
             }
             KeyCode::Backspace => {

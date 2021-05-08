@@ -47,7 +47,6 @@ impl Opt {
                     .collect();
                 lines
                     .iter()
-                    .flat_map(|line| line.split_whitespace())
                     .map(String::from)
                     .collect()
             }
