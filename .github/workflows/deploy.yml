@@ -99,6 +99,7 @@ jobs:
 
   github-release:
     name: GitHub Release
+    needs: binaries
     runs-on: ubuntu-latest
 
     steps:
