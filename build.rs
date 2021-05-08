@@ -39,8 +39,8 @@ fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
 
 #[allow(unused_must_use)]
 fn main() -> std::io::Result<()> {
-    if env::var("NO_RESOURCES").is_some() {
-        return Ok(())
+    if env::var_os("NO_RESOURCES").is_some() {
+        return Ok(());
     }
 
     let install_path = dirs::config_dir()
