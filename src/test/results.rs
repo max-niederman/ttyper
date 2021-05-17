@@ -88,23 +88,23 @@ impl From<Test> for Results {
 
                 // NOTE: this should really be optimized to use less than O(n) space
                 for win in events.windows(2) {
-                    let event_cps = win[1]
+                    let event_dur = win[1]
                         .time
                         .checked_duration_since(win[0].time)
                         .map(|d| d.as_secs_f64().recip());
 
-                    if let Some(event_cps) = event_cps {
-                        cps.per_event.push(event_cps);
+                    if let Some(event_dur) = event_dur {
+                        cps.per_event.push(event_dur);
 
                         let key = keys.entry(win[1].key).or_insert((0.0, 0));
-                        key.0 += event_cps;
+                        key.0 += event_dur;
                         key.1 += 1;
                     }
                 }
 
                 cps.per_key = keys
                     .into_iter()
-                    .map(|(key, (total, count))| (key, total / count as f64))
+                    .map(|(key, (total, count))| (key, count as f64 / total))
                     .collect();
 
                 cps.overall = cps.per_event.iter().sum::<f64>() / cps.per_event.len() as f64;
