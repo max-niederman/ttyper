@@ -37,17 +37,19 @@ fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
     Ok(())
 }
 
+#[allow(unused_must_use)]
 fn main() -> std::io::Result<()> {
     let install_path = dirs::config_dir()
         .expect("Couldn't find a configuration directory to install to.")
         .join("ttyper");
-    fs::create_dir_all(&install_path)?;
+    fs::remove_dir_all(&install_path);
+    fs::create_dir_all(&install_path);
 
     let resources_path = env::current_dir()
         .expect("Couldn't find the source directory.")
         .join("resources")
         .join("runtime");
-    copy(&resources_path, &install_path)?;
+    copy(&resources_path, &install_path);
 
     Ok(())
 }

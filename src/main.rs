@@ -45,11 +45,7 @@ impl Opt {
                     .lines()
                     .filter_map(Result::ok)
                     .collect();
-                lines
-                    .iter()
-                    .flat_map(|line| line.split_whitespace())
-                    .map(String::from)
-                    .collect()
+                lines.iter().map(String::from).collect()
             }
             None => {
                 let language: Vec<String> = {
@@ -60,7 +56,7 @@ impl Opt {
                             .join("language")
                             .join(&self.language)
                     });
-                    let file = fs::File::open(path).expect("Error reading language file.");
+                    let file = fs::File::open(path).expect("Error reading language file. Make sure Luthien's config dir isn't missing.");
                     io::BufReader::new(file)
                         .lines()
                         .filter_map(Result::ok)

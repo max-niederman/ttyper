@@ -1,5 +1,8 @@
 use super::test::{results, Test};
 
+use crossterm::event::KeyCode;
+use crossterm::event::KeyEvent;
+use results::Fraction;
 use std::iter;
 use tui::{
     buffer::Buffer,
@@ -191,22 +194,45 @@ impl Widget for &results::Results {
                 .fg(Color::Cyan),
         );
 
-        info_text.extend(Text::from(format!(
-            "Adjusted WPM: {:.1}",
-            self.cps.overall * 12f64 * f64::from(self.accuracy.overall)
-        )));
-        info_text.extend(Text::from(format!(
-            "Accuracy: {:.1}%",
-            f64::from(self.accuracy.overall) * 100f64
-        )));
-        info_text.extend(Text::from(format!(
-            "Raw WPM: {:.1}",
-            self.cps.overall * 12f64
-        )));
-        info_text.extend(Text::from(format!(
-            "Correct Keypresses: {}",
-            self.accuracy.overall
-        )));
+        info_text.extend(vec![
+            Spans::from(format!(
+                "Adjusted WPM: {:.1}",
+                self.cps.overall * 12f64 * f64::from(self.accuracy.overall)
+            )),
+            Spans::from(format!(
+                "Accuracy: {:.1}%",
+                f64::from(self.accuracy.overall) * 100f64
+            )),
+            Spans::from(format!("Raw WPM: {:.1}", self.cps.overall * 12f64)),
+            Spans::from(format!("Correct Keypresses: {}", self.accuracy.overall)),
+        ]);
+
+        let mut worst_keys: Vec<(&KeyEvent, &Fraction)> = self
+            .accuracy
+            .per_key
+            .iter()
+            .filter(|(key, _)| matches!(key.code, KeyCode::Char(_)))
+            .collect();
+        worst_keys.sort_unstable_by_key(|x| x.1);
+
+        info_text.extend(iter::once(Spans::from("Worst Keys:")));
+        info_text.extend(
+            worst_keys
+                .iter()
+                .take(5)
+                .filter_map(|(key, acc)| {
+                    if let KeyCode::Char(character) = key.code {
+                        Some(format!(
+                            "- {} at {:.1}% accuracy",
+                            character,
+                            f64::from(**acc) * 100.0,
+                        ))
+                    } else {
+                        None
+                    }
+                })
+                .map(Spans::from),
+        );
 
         let info = Paragraph::new(info_text).block(
             Block::default()
