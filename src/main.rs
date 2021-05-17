@@ -56,7 +56,7 @@ impl Opt {
                             .join("language")
                             .join(&self.language)
                     });
-                    let file = fs::File::open(path).expect("Error reading language file.");
+                    let file = fs::File::open(path).expect("Error reading language file. Make sure Luthien's config dir isn't missing.");
                     io::BufReader::new(file)
                         .lines()
                         .filter_map(Result::ok)
