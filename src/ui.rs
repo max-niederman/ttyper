@@ -196,13 +196,18 @@ impl Widget for &results::Results {
         info_text.extend(vec![
             Spans::from(format!(
                 "Adjusted WPM: {:.1}",
-                self.cps.overall * 12f64 * f64::from(self.accuracy.overall)
+                (self.cps.overall / self.average_word_length)
+                    * 60f64
+                    * f64::from(self.accuracy.overall)
             )),
             Spans::from(format!(
                 "Accuracy: {:.1}%",
                 f64::from(self.accuracy.overall) * 100f64
             )),
-            Spans::from(format!("Raw WPM: {:.1}", self.cps.overall * 12f64)),
+            Spans::from(format!(
+                "Raw WPM: {:.1}",
+                (self.cps.overall / self.average_word_length) * 60f64
+            )),
             Spans::from(format!("Correct Keypresses: {}", self.accuracy.overall)),
         ]);
 

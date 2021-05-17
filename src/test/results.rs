@@ -70,6 +70,7 @@ pub struct AccuracyData {
 pub struct Results {
     pub cps: CpsData,
     pub accuracy: AccuracyData,
+    pub average_word_length: f64,
 }
 
 impl From<Test> for Results {
@@ -77,6 +78,12 @@ impl From<Test> for Results {
         let events: Vec<&super::TestEvent> =
             test.words.iter().flat_map(|w| w.events.iter()).collect();
         Self {
+            average_word_length: {
+                let total_character_count: usize = test.words.iter().map(|x| x.text.len()).sum();
+                let total_word_count: usize = test.words.len();
+
+                total_character_count as f64 / total_word_count as f64
+            },
             cps: {
                 let mut cps = CpsData {
                     overall: 0f64,
@@ -88,26 +95,26 @@ impl From<Test> for Results {
 
                 // NOTE: this should really be optimized to use less than O(n) space
                 for win in events.windows(2) {
-                    let event_cps = win[1]
+                    let event_duration = win[1]
                         .time
                         .checked_duration_since(win[0].time)
-                        .map(|d| d.as_secs_f64().recip());
+                        .map(|d| d.as_secs_f64());
 
-                    if let Some(event_cps) = event_cps {
-                        cps.per_event.push(event_cps);
+                    if let Some(event_duration) = event_duration {
+                        cps.per_event.push(event_duration);
 
                         let key = keys.entry(win[1].key).or_insert((0.0, 0));
-                        key.0 += event_cps;
+                        key.0 += event_duration;
                         key.1 += 1;
                     }
                 }
 
                 cps.per_key = keys
                     .into_iter()
-                    .map(|(key, (total, count))| (key, total / count as f64))
+                    .map(|(key, (total, count))| (key, count as f64 / total))
                     .collect();
 
-                cps.overall = cps.per_event.iter().sum::<f64>() / cps.per_event.len() as f64;
+                cps.overall = events.len() as f64 / cps.per_event.iter().sum::<f64>();
 
                 cps
             },
