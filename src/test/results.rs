@@ -91,7 +91,7 @@ impl From<Test> for Results {
                     let event_dur = win[1]
                         .time
                         .checked_duration_since(win[0].time)
-                        .map(|d| d.as_secs_f64().recip());
+                        .map(|d| d.as_secs_f64());
 
                     if let Some(event_dur) = event_dur {
                         cps.per_event.push(event_dur);
@@ -107,7 +107,7 @@ impl From<Test> for Results {
                     .map(|(key, (total, count))| (key, count as f64 / total))
                     .collect();
 
-                cps.overall = cps.per_event.iter().sum::<f64>() / cps.per_event.len() as f64;
+                cps.overall = cps.per_event.len() as f64 / cps.per_event.iter().sum::<f64>();
 
                 cps
             },
