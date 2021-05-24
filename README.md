@@ -47,5 +47,6 @@ The following languages are available by default:
 - python
 - ruby
 - rust
+- qt
 
 Additional languages can be added by creating a file in `TTYPER_CONFIG_DIR/language` with a word on each line. On Linux, the config directory is `$XDG_CONFIG_DIR/ttyper`; on Windows, it's `C:\Users\user\AppData\Roaming\ttyper`; and on macOS it's `$HOME/Library/Application Support/ttyper`.
