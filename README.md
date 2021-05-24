@@ -35,17 +35,20 @@ For usage instructions, you can run `ttyper --help`.
 
 The following languages are available by default:
 
-- english100
-- english200
-- english1000
-- c
-- csharp
-- go
-- html
-- java
-- javascript
-- python
-- ruby
-- rust
+| name | description |
+| :--- | ----------: |
+| `english100` | 100 most common English words | 
+| `english200` | 200 most common English words | 
+| `english1000` | 1000 most common English words | 
+| `c` | The C programming language |
+| `csharp` | The C# programming language |
+| `go` | The Go programming language |
+| `html` | HyperText Markup Language |
+| `java` | The Java programming language |
+| `javascript` | The Javascript programming language |
+| `python` | The Python programming language |
+| `ruby` | The Ruby programming language |
+| `rust` | The Rust programming language |
+| `qt` | Common QT framework tokens |
 
-Additional languages can be added by creating a file in `TTYPER_CONFIG_DIR/language` with a word on each line. On Linux, the config directory is `$XDG_CONFIG_DIR/ttyper`; on Windows, it's `C:\Users\user\AppData\Roaming\ttyper`; and on macOS it's `$HOME/Library/Application Support/ttyper`.
+Additional languages can be added by creating a file in `TTYPER_CONFIG_DIR/language` with a word on each line. On Linux, the config directory is `$HOME/.config/ttyper`; on Windows, it's `C:\Users\user\AppData\Roaming\ttyper`; and on macOS it's `$HOME/Library/Application Support/ttyper`.
