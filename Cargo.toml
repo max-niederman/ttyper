@@ -13,6 +13,7 @@ edition = "2018"
 structopt = "0.3"
 dirs = "3.0"
 crossterm = "0.19"
+rust-embed = "5.9"
 
 [dependencies.tui]
 version = "0.14"
