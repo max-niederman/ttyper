@@ -8,8 +8,9 @@ use tui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
+    symbols::Marker,
     text::{Span, Spans, Text},
-    widgets::{Block, BorderType, Borders, Paragraph, Widget},
+    widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType, Paragraph, Widget},
 };
 
 #[derive(Clone)]
@@ -174,6 +175,7 @@ impl Widget for &results::Results {
             .split(area);
         let res_chunks = Layout::default()
             .direction(Direction::Vertical)
+            .margin(1) // Graph looks tremendously better with just a little margin
             .constraints([Constraint::Ratio(1, 3), Constraint::Ratio(2, 3)])
             .split(chunks[0]);
 
@@ -241,5 +243,50 @@ impl Widget for &results::Results {
                 .border_style(Style::default().fg(Color::Cyan)),
         );
         info.render(res_chunks[0], buf);
+
+        // Raw WPM over time Graph
+        let mut raw_wpm_data_over_time: Vec<(f64, f64)> = Vec::new();
+        let mut min_raw_wpm = f64::MAX;
+        let mut max_raw_wpm = f64::MIN;
+
+        // Calculate wpm over time
+        for time_step in 1..self.cps.per_event.len() {
+            let mut cur_overall_wpm = self.cps.per_event[..time_step].len() as f64
+                / self.cps.per_event[..time_step].iter().sum::<f64>();
+            cur_overall_wpm *= 12f64;
+            raw_wpm_data_over_time.push((time_step as f64, cur_overall_wpm));
+
+            // Update current min and max's
+            min_raw_wpm = min_raw_wpm.min(cur_overall_wpm);
+            max_raw_wpm = max_raw_wpm.max(cur_overall_wpm);
+        }
+
+        let mut wpm_label_strs: Vec<String> = Vec::new();
+        for wpm_step in ((min_raw_wpm as u8)..(max_raw_wpm as u8)).step_by(5) {
+            let label = &format!("{}", wpm_step);
+            wpm_label_strs.push(label.clone());
+        }
+
+        let wpm_datasets = vec![Dataset::default()
+            .name("Raw WPM")
+            .marker(Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(Color::Cyan))
+            .data(&raw_wpm_data_over_time)];
+
+        let wpm_chart = Chart::new(wpm_datasets)
+            .block(Block::default().title("Chart"))
+            .x_axis(
+                Axis::default()
+                    .title(Span::styled("Time", Style::default().fg(Color::Cyan)))
+                    .bounds([0.0, self.cps.per_event.len() as f64]),
+            )
+            .y_axis(
+                Axis::default()
+                    .title(Span::styled("WPM", Style::default().fg(Color::Gray)))
+                    .bounds([min_raw_wpm, max_raw_wpm])
+                    .labels(wpm_label_strs.iter().cloned().map(Span::from).collect()),
+            );
+        wpm_chart.render(res_chunks[1], buf);
     }
 }
