@@ -46,6 +46,7 @@ The following languages are available by default:
 | `html`        |           HyperText Markup Language |
 | `java`        |       The Java programming language |
 | `javascript`  | The Javascript programming language |
+| `norwegian`   |     200 most common Norwegian words |
 | `php`         |        The PHP programming language |
 | `python`      |     The Python programming language |
 | `ruby`        |       The Ruby programming language |
