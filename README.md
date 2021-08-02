@@ -47,6 +47,7 @@ The following languages are available by default:
 | `java`        |       The Java programming language |
 | `javascript`  | The Javascript programming language |
 | `norwegian`   |     200 most common Norwegian words |
+| `german`      |        207 most common German words |
 | `php`         |        The PHP programming language |
 | `python`      |     The Python programming language |
 | `ruby`        |       The Ruby programming language |
