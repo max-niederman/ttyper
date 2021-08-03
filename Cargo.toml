@@ -1,7 +1,7 @@
 [package]
 name = "ttyper"
 description = "Terminal-based typing test."
-version = "0.2.4"
+version = "0.2.5"
 readme = "README.md"
 repository = "https://github.com/max-niederman/ttyper.git"
 homepage = "https://github.com/max-niederman/ttyper"
