@@ -42,8 +42,6 @@ The following languages are available by default:
 | `english100`  |       100 most common English words |
 | `english200`  |       200 most common English words |
 | `english1000` |      1000 most common English words |
-| `c`           |          The C programming language |
-| `csharp`      |         The C# programming language |
 | `german`      |        207 most common German words |
 | `go`          |         The Go programming language |
 | `html`        |           HyperText Markup Language |
