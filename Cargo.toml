@@ -11,12 +11,12 @@ edition = "2018"
 
 [dependencies]
 structopt = "0.3"
-dirs = "3.0"
-crossterm = "0.19"
-rust-embed = "5.9"
+dirs = "4.0"
+crossterm = "0.21"
+rust-embed = "6.2"
 
 [dependencies.tui]
-version = "0.14"
+version = "0.16"
 default-features = false
 features = ["crossterm"]
 
@@ -25,4 +25,4 @@ version = "0.8"
 features = ["alloc"]
 
 [build-dependencies]
-dirs = "3.0"
+dirs = "4.0"

@@ -11,7 +11,6 @@ use crossterm::{
 use rand::{seq::SliceRandom, thread_rng};
 use rust_embed::RustEmbed;
 use std::{
-    borrow::Cow,
     ffi::OsString,
     fs,
     io::{self, BufRead},
@@ -68,7 +67,8 @@ impl Opt {
                     .flatten()
                     .or_else(|| fs::read(self.language_dir().join(&self.language)).ok())
                     .or_else(|| {
-                        Resources::get(&format!("language/{}", self.language)).map(Cow::into_owned)
+                        Resources::get(&format!("language/{}", self.language))
+                            .map(|f| f.data.into_owned())
                     })?;
                 let language: Vec<&str> = str::from_utf8(&bytes)
                     .expect("Language file had non-utf8 encoding.")
