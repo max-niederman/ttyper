@@ -10,16 +10,6 @@ pub struct TestEvent {
     pub correct: Option<bool>,
 }
 
-impl Default for TestEvent {
-    fn default() -> Self {
-        Self {
-            time: Instant::now(),
-            key: KeyEvent::from(KeyCode::Null),
-            correct: None,
-        }
-    }
-}
-
 impl fmt::Debug for TestEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TestEvent")
