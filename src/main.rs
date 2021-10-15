@@ -41,6 +41,10 @@ struct Opt {
 
     #[structopt(short, long, default_value = "english200")]
     language: String,
+
+    /// List installed languages
+    #[structopt(long)]
+    list_languages: bool,
 }
 
 impl Opt {
@@ -58,14 +62,7 @@ impl Opt {
                 let bytes: Vec<u8> = self
                     .language_file
                     .clone()
-                    .or_else(|| {
-                        Some(
-                            dirs::config_dir()?
-                                .join("ttyper")
-                                .join("language")
-                                .join(&self.language),
-                        )
-                    })
+                    .or_else(|| Some(self.language_dir()?.join(&self.language)))
                     .and_then(|path| fs::read(path).ok())
                     .or_else(|| {
                         Resources::get(&format!("language/{}", self.language)).map(Cow::into_owned)
@@ -88,6 +85,39 @@ impl Opt {
                 Some(words)
             }
         }
+    }
+
+    /// Installed languages under config directory.
+    fn languages(&self) -> Option<Vec<String>> {
+        let lang_dir = self.language_dir()?;
+
+        let entries = fs::read_dir(lang_dir)
+            .ok()?
+            .map(|entry| entry.map(|e| e.path()))
+            .collect::<Result<Vec<_>, _>>()
+            .ok()?;
+
+        let mut languages = Vec::new();
+
+        for entry in entries {
+            let file = entry.file_name()?;
+            let lang = file.to_str()?;
+
+            languages.push(lang.to_string());
+        }
+        languages.sort();
+
+        Some(languages)
+    }
+
+    /// Config directory.
+    fn config_dir(&self) -> Option<PathBuf> {
+        Some(dirs::config_dir()?.join("ttyper"))
+    }
+
+    /// Language directory under condig directory.
+    fn language_dir(&self) -> Option<PathBuf> {
+        Some(self.config_dir()?.join("language"))
     }
 }
 
@@ -166,6 +196,17 @@ fn main() -> crossterm::Result<()> {
     let opt = Opt::from_args();
 
     loop {
+        if opt.list_languages {
+            let langs = opt
+                .languages()
+                .expect("Couldn't get installed languages under config directory.");
+
+            for lang in langs {
+                println!("{}", lang);
+            }
+            return Ok(());
+        }
+
         let contents = opt.gen_contents().expect(
             "Couldn't get test contents. Make sure the specified language actually exists.",
         );
