@@ -8,15 +8,17 @@ use crossterm::{
     event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
     execute, terminal,
 };
-use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::{seq::SliceRandom, thread_rng};
 use rust_embed::RustEmbed;
-use std::borrow::Cow;
-use std::fs;
-use std::io::{self, BufRead};
-use std::num;
-use std::path::PathBuf;
-use std::str;
+use std::{
+    borrow::Cow,
+    ffi::OsString,
+    fs,
+    io::{self, BufRead},
+    num,
+    path::PathBuf,
+    str,
+};
 use structopt::StructOpt;
 use tui::{backend::CrosstermBackend, terminal::Terminal};
 
@@ -61,9 +63,10 @@ impl Opt {
             None => {
                 let bytes: Vec<u8> = self
                     .language_file
-                    .clone()
-                    .or_else(|| Some(self.language_dir()?.join(&self.language)))
-                    .and_then(|path| fs::read(path).ok())
+                    .as_ref()
+                    .map(|p| fs::read(p).ok())
+                    .flatten()
+                    .or_else(|| fs::read(self.language_dir().join(&self.language)).ok())
                     .or_else(|| {
                         Resources::get(&format!("language/{}", self.language)).map(Cow::into_owned)
                     })?;
@@ -87,37 +90,26 @@ impl Opt {
         }
     }
 
-    /// Installed languages under config directory.
-    fn languages(&self) -> Option<Vec<String>> {
-        let lang_dir = self.language_dir()?;
-
-        let entries = fs::read_dir(lang_dir)
-            .ok()?
-            .map(|entry| entry.map(|e| e.path()))
-            .collect::<Result<Vec<_>, _>>()
-            .ok()?;
-
-        let mut languages = Vec::new();
-
-        for entry in entries {
-            let file = entry.file_name()?;
-            let lang = file.to_str()?;
-
-            languages.push(lang.to_string());
-        }
-        languages.sort();
-
-        Some(languages)
+    /// Installed languages under config directory
+    fn languages(&self) -> io::Result<Vec<OsString>> {
+        Ok(self
+            .language_dir()
+            .read_dir()?
+            .filter_map(Result::ok)
+            .map(|e| e.file_name())
+            .collect())
     }
 
-    /// Config directory.
-    fn config_dir(&self) -> Option<PathBuf> {
-        Some(dirs::config_dir()?.join("ttyper"))
+    /// Config directory
+    fn config_dir(&self) -> PathBuf {
+        dirs::config_dir()
+            .expect("Failed to find config directory.")
+            .join("ttyper")
     }
 
-    /// Language directory under condig directory.
-    fn language_dir(&self) -> Option<PathBuf> {
-        Some(self.config_dir()?.join("language"))
+    /// Language directory under config directory
+    fn language_dir(&self) -> PathBuf {
+        self.config_dir().join("language")
     }
 }
 
@@ -195,18 +187,15 @@ fn exit() -> crossterm::Result<()> {
 fn main() -> crossterm::Result<()> {
     let opt = Opt::from_args();
 
+    if opt.list_languages {
+        opt.languages()
+            .expect("Couldn't get installed languages under config directory.")
+            .iter()
+            .for_each(|name| println!("{}", name.to_str().expect("Ill-formatted language name.")));
+        return Ok(());
+    }
+
     loop {
-        if opt.list_languages {
-            let langs = opt
-                .languages()
-                .expect("Couldn't get installed languages under config directory.");
-
-            for lang in langs {
-                println!("{}", lang);
-            }
-            return Ok(());
-        }
-
         let contents = opt.gen_contents().expect(
             "Couldn't get test contents. Make sure the specified language actually exists.",
         );
