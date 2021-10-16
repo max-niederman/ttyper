@@ -258,7 +258,8 @@ impl Widget for &results::Results {
             .map(|(i, window)| {
                 (
                     (i + WPM_SMA_WIDTH) as f64,
-                    window.iter().copied().map(f64::recip).sum::<f64>() * WPM_PER_CPS / window.len() as f64,
+                    window.iter().copied().map(f64::recip).sum::<f64>() * WPM_PER_CPS
+                        / window.len() as f64,
                 )
             })
             .collect();

@@ -122,7 +122,10 @@ impl From<Test> for Results {
                     .iter()
                     .filter(|event| event.correct.is_some())
                     .for_each(|event| {
-                        let key = acc.per_key.entry(event.key).or_insert(Fraction::new(0, 0));
+                        let key = acc
+                            .per_key
+                            .entry(event.key)
+                            .or_insert_with(|| Fraction::new(0, 0));
 
                         acc.overall.denominator += 1;
                         key.denominator += 1;
