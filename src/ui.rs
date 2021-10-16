@@ -13,6 +13,12 @@ use tui::{
     widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType, Paragraph, Widget},
 };
 
+// Convert WPM to CPS (clicks per second)
+const WPM_PER_CPS: f64 = 12.0;
+
+// Width of the moving average window for the WPM chart
+const WPM_SMA_WIDTH: usize = 10;
+
 #[derive(Clone)]
 struct SizedBlock<'a> {
     block: Block<'a>,
@@ -198,13 +204,13 @@ impl Widget for &results::Results {
         info_text.extend(vec![
             Spans::from(format!(
                 "Adjusted WPM: {:.1}",
-                self.cps.overall * 12f64 * f64::from(self.accuracy.overall)
+                self.cps.overall * WPM_PER_CPS * f64::from(self.accuracy.overall)
             )),
             Spans::from(format!(
                 "Accuracy: {:.1}%",
                 f64::from(self.accuracy.overall) * 100f64
             )),
-            Spans::from(format!("Raw WPM: {:.1}", self.cps.overall * 12f64)),
+            Spans::from(format!("Raw WPM: {:.1}", self.cps.overall * WPM_PER_CPS)),
             Spans::from(format!("Correct Keypresses: {}", self.accuracy.overall)),
         ]);
 
@@ -244,48 +250,52 @@ impl Widget for &results::Results {
         );
         info.render(res_chunks[0], buf);
 
-        // Raw WPM over time Graph
-        let mut raw_wpm_data_over_time: Vec<(f64, f64)> = Vec::new();
-        let mut min_raw_wpm = f64::MAX;
-        let mut max_raw_wpm = f64::MIN;
+        let wpm_sma: Vec<(f64, f64)> = self
+            .cps
+            .per_event
+            .windows(WPM_SMA_WIDTH)
+            .enumerate()
+            .map(|(i, window)| {
+                (
+                    (i + WPM_SMA_WIDTH) as f64,
+                    window.iter().copied().map(f64::recip).sum::<f64>() * WPM_PER_CPS / window.len() as f64,
+                )
+            })
+            .collect();
 
-        // Calculate wpm over time
-        for time_step in 1..self.cps.per_event.len() {
-            let mut cur_overall_wpm = self.cps.per_event[..time_step].len() as f64
-                / self.cps.per_event[..time_step].iter().sum::<f64>();
-            cur_overall_wpm *= 12f64;
-            raw_wpm_data_over_time.push((time_step as f64, cur_overall_wpm));
-
-            // Update current min and max's
-            min_raw_wpm = min_raw_wpm.min(cur_overall_wpm);
-            max_raw_wpm = max_raw_wpm.max(cur_overall_wpm);
-        }
-
-        let mut wpm_label_strs: Vec<String> = Vec::new();
-        for wpm_step in ((min_raw_wpm as u8)..(max_raw_wpm as u8)).step_by(5) {
-            let label = &format!("{}", wpm_step);
-            wpm_label_strs.push(label.clone());
-        }
+        let wpm_sma_min = wpm_sma
+            .iter()
+            .map(|(_, x)| x)
+            .fold(f64::INFINITY, |a, &b| a.min(b));
+        let wpm_sma_max = wpm_sma
+            .iter()
+            .map(|(_, x)| x)
+            .fold(f64::NEG_INFINITY, |a, &b| a.max(b));
 
         let wpm_datasets = vec![Dataset::default()
-            .name("Raw WPM")
+            .name("WPM")
             .marker(Marker::Braille)
             .graph_type(GraphType::Line)
             .style(Style::default().fg(Color::Cyan))
-            .data(&raw_wpm_data_over_time)];
+            .data(&wpm_sma)];
 
         let wpm_chart = Chart::new(wpm_datasets)
             .block(Block::default().title("Chart"))
             .x_axis(
                 Axis::default()
-                    .title(Span::styled("Time", Style::default().fg(Color::Cyan)))
+                    .title(Span::styled("Keypresses", Style::default().fg(Color::Cyan)))
                     .bounds([0.0, self.cps.per_event.len() as f64]),
             )
             .y_axis(
                 Axis::default()
                     .title(Span::styled("WPM", Style::default().fg(Color::Gray)))
-                    .bounds([min_raw_wpm, max_raw_wpm])
-                    .labels(wpm_label_strs.iter().cloned().map(Span::from).collect()),
+                    .bounds([wpm_sma_min, wpm_sma_max])
+                    .labels(
+                        (wpm_sma_min as u16..wpm_sma_max as u16)
+                            .step_by(5)
+                            .map(|n| Span::raw(format!("{}", n)))
+                            .collect(),
+                    ),
             );
         wpm_chart.render(res_chunks[1], buf);
     }

@@ -56,6 +56,7 @@ impl PartialResults for Test {
     }
 }
 
+// Instead of storing WPM, we store CPS (clicks per second)
 pub struct CpsData {
     pub overall: f64,
     pub per_event: Vec<f64>,
