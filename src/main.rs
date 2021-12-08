@@ -115,6 +115,7 @@ impl Opt {
 
 fn run_test(mut test: Test) -> crossterm::Result<bool> {
     let mut stdout = io::stdout();
+
     execute!(
         stdout,
         cursor::Hide,
@@ -144,6 +145,9 @@ fn run_test(mut test: Test) -> crossterm::Result<bool> {
 
                 match key.code {
                     KeyCode::Esc => break,
+                    KeyCode::Tab => {
+                        return Ok(true);
+                    },
                     _ => test.handle_key(key),
                 }
 
@@ -207,9 +211,10 @@ fn main() -> crossterm::Result<()> {
         if run_test(Test::new(contents))? {
             match event::read()? {
                 Event::Key(KeyEvent {
-                    code: KeyCode::Char('r'),
+                    code: KeyCode::Tab,
                     modifiers: KeyModifiers::NONE,
                 }) => (),
+
                 _ => break,
             }
         } else {
