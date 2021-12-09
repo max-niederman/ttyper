@@ -109,6 +109,10 @@ impl Test {
                     correct: Some(word.text.starts_with(&word.progress[..])),
                     key,
                 });
+                if word.progress == word.text && self.current_word == self.words.len() - 1 {
+                    self.complete = true;
+                    self.current_word = 0;
+                }
             }
             _ => {}
         };
