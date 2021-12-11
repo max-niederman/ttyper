@@ -176,6 +176,7 @@ fn run_test(mut test: Test) -> crossterm::Result<bool> {
                     test_obj: test,
                     args: String::from("foo")}; 
     
+    csv.write_csv();
     Ok(true)
 }
 

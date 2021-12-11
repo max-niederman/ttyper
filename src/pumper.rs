@@ -1,6 +1,6 @@
-use super::{Results, Test, KeyCode, KeyEvent};
+use super::{Results, Test, KeyCode};
 use std::time::SystemTime;
-
+use std::io::Write;
 /*
 header
 datetime    settings    results.cps.overall results.accuracy.overall
@@ -103,7 +103,7 @@ impl Pumper {
         return ret;
     }
 
-    pub fn return_csv(&self) -> String {
+    pub fn return_csv_format(&self) -> String {
         let mut ret: String = String::new();
 
         ret.push_str(&self.gen_csv_from_vec(self.unpack_header()));
@@ -118,7 +118,12 @@ impl Pumper {
         return ret;
     }
     
+    // using dependancies is a bit too much
     pub fn write_csv(&self) {
-        
+        let mut file = std::fs::File::create("ttyper_record.csv").expect("create failied");
+
+        // this is what i was talking about, there is a write_vector but or write_all_vectored or whatever ti is, but yea
+        file.write_all(self.return_csv_format().as_bytes()).expect("write failed");
+
     }
 }
