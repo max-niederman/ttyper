@@ -35,7 +35,7 @@ struct Opt {
     #[structopt(short, long)]
     debug: bool,
 
-    #[structopt(short, long, default_value = "3")]
+    #[structopt(short, long, default_value = "50")]
     words: num::NonZeroUsize,
 
     #[structopt(long, parse(from_os_str))]

@@ -77,7 +77,6 @@ impl Pumper {
                     KeyCode::Char(character) => curr_vec.push(character.to_string()),
                     KeyCode::Backspace => curr_vec.push("backspace".to_string()),
                     KeyCode::Enter => curr_vec.push("enter".to_string()),
-                    // KeyCode::Char(character) => curr_vec.push(character.to_string()),
                     _ => ()
                 }
 
@@ -94,7 +93,6 @@ impl Pumper {
                     Some(i) => curr_vec.push(i.to_string()),
                     _ => ()
                 }
-                // curr_vec.push(curr_char.correct.to_string());
 
                 ret.push(curr_vec);
                 true_index+=1;
@@ -115,7 +113,7 @@ impl Pumper {
             ret.push_str(&String::from("\n"));
         }
 
-        ret.push_str("---\n");
+        ret.push_str("---\n"); 
         return ret;
     }
     
