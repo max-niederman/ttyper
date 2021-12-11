@@ -20,6 +20,7 @@ use std::{
 };
 use structopt::StructOpt;
 use tui::{backend::CrosstermBackend, terminal::Terminal};
+use std::time::SystemTime;
 
 #[derive(RustEmbed)]
 #[folder = "resources/runtime"]
@@ -34,7 +35,7 @@ struct Opt {
     #[structopt(short, long)]
     debug: bool,
 
-    #[structopt(short, long, default_value = "50")]
+    #[structopt(short, long, default_value = "3")]
     words: num::NonZeroUsize,
 
     #[structopt(long, parse(from_os_str))]
@@ -165,12 +166,122 @@ fn run_test(mut test: Test) -> crossterm::Result<bool> {
     }
 
     // Draw results
-    let results = Results::from(test);
+    let results = Results::from(&test);
     terminal.clear()?;
     terminal.draw(|f| {
         f.render_widget(&results, f.size());
     })?;
+    
+    let csv = Pumper {results_obj: results,
+                    test_obj: test,
+                    args: String::from("foo")}; 
+    
+    let a = csv.return_csv();
+    println!("{}",a);
+    
     Ok(true)
+}
+
+/*
+adding codes likes this in the main file is pretty problematic, i can try to mess around with the `mod` thing but I am not a rust pro,
+so i am not really sure what i am doing is right or not
+
+header
+datetime    settings    results.cps.overall results.accuracy.overall
+xx          yy          aa                  bb              
+
+
+is is possible to implement linkedhashmap for results::..::per_key so chronological data could be read easier?
+
+data    character (hopefully it is because it's linked) time elapsed since last      correct? (Some<T>)
+index   words[index].event[index].key.code.(key=0)    results.cps.per_event[index] words[index].event[index].correct
+1       aa                                              yy                             kk                   
+*/
+
+pub struct Pumper {
+    results_obj: Results,
+    test_obj: Test,
+    args: String,
+} 
+
+impl Pumper {
+    fn gen_datetime(&self) -> u64 {
+        let mut a: u64 = 0;
+        match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+            Ok(n) => {a = n.as_secs()},
+            Err(_) => (),
+        }
+        return a;
+    }
+
+    fn gen_settings(&self) -> String {
+        //TODO: do it
+        String::new()
+    }
+
+    fn gen_csv_from_vec(&self, v: Vec<String>) -> String {
+        let s = v.into_iter().map(|i| i.to_string()+", ").collect::<String>();
+        return s;
+    }
+
+    // it can be done without these things by doing the string directly instead of making string to vector and make back to string
+    //  but at least it is easier to manage for the time being
+    fn unpack_header(&self) -> Vec<String> {
+        let mut ret: Vec<String> = Vec::new();
+
+        // i am not sure if this is the rust way?
+        ret.push(self.gen_datetime().to_string());
+        ret.push(self.gen_settings().to_string());
+        ret.push(self.results_obj.cps.overall.to_string());
+        ret.push(self.results_obj.accuracy.overall.to_string());
+
+        return ret;
+    }
+
+    fn unpack_data(&self) -> Vec<Vec<String>> {
+        let mut ret: Vec<Vec<String>> = Vec::new();
+
+        // is this the rust way? i dont even know, there are too many functions and i dont know how to use them
+        // and again it's faster to do this directly instead of making string into vector then string again
+        // but i think rust is fast so should it be fine?
+        let mut true_index = 0;
+        for index in 0..self.test_obj.words.len() {
+            let curr_word = &self.test_obj.words[index];
+
+            for index2 in 0..curr_word.events.len() {
+                let curr_char = &curr_word.events[index2];
+                let mut curr_vec: Vec<String> = Vec::new();
+
+                curr_vec.push((true_index).to_string());
+
+                // i really dont know what i am doing
+                if let KeyCode::Char(character) = curr_char.key.code {
+                    curr_vec.push(character.to_string());
+                }
+                curr_vec.push(self.results_obj.cps.per_event[true_index].to_string());
+                curr_vec.push(curr_char.correct.is_some().to_string());
+
+                ret.push(curr_vec);
+                true_index+=1;
+            }
+        }
+        return ret;
+    }
+
+    fn return_csv(&self) -> String {
+        let mut ret: String = String::new();
+
+        ret.push_str(&self.gen_csv_from_vec(self.unpack_header()));
+        ret.push_str(&String::from("\n"));
+
+        for s in self.unpack_data().iter() {
+            // is this memory safe????
+            ret.push_str(&self.gen_csv_from_vec(s.to_vec()));
+            ret.push_str(&String::from("\n"));
+        }
+
+        return ret;
+    }
 }
 
 fn exit() -> crossterm::Result<()> {
