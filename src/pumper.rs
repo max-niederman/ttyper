@@ -115,15 +115,14 @@ impl Pumper {
             ret.push_str(&String::from("\n"));
         }
 
+        ret.push_str("---\n");
         return ret;
     }
     
     // using dependancies is a bit too much
     pub fn write_csv(&self) {
-        let mut file = std::fs::File::create("ttyper_record.csv").expect("create failied");
-
-        // this is what i was talking about, there is a write_vector but or write_all_vectored or whatever ti is, but yea
+        //TODO: make the file name more appealing
+        let mut file = std::fs::OpenOptions::new().create(true).write(true).append(true).open("ttyper_record.csv").expect("Unable to open file");
         file.write_all(self.return_csv_format().as_bytes()).expect("write failed");
-
     }
 }

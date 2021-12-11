@@ -114,7 +114,7 @@ impl Opt {
     }
 }
 
-fn run_test(mut test: Test) -> crossterm::Result<bool> {
+fn run_test(mut test: Test) -> crossterm::Result<i8> {
     let mut stdout = io::stdout();
     execute!(
         stdout,
@@ -139,12 +139,14 @@ fn run_test(mut test: Test) -> crossterm::Result<bool> {
             Event::Key(key) => {
                 if key.modifiers.contains(KeyModifiers::CONTROL) {
                     if let KeyCode::Char('c') = key.code {
-                        return Ok(false);
+                        return Ok(-1);
                     };
                 }
 
                 match key.code {
-                    KeyCode::Esc => break,
+                    KeyCode::Esc => {
+                        return Ok(-1);
+                    },
                     _ => test.handle_key(key),
                 }
 
@@ -172,12 +174,14 @@ fn run_test(mut test: Test) -> crossterm::Result<bool> {
         f.render_widget(&results, f.size());
     })?;
     
+    // write csv
+    // TODO: add args as settings
     let csv = pumper::Pumper {results_obj: results,
                     test_obj: test,
                     args: String::from("foo")}; 
-    
     csv.write_csv();
-    Ok(true)
+
+    Ok(0)
 }
 
 fn exit() -> crossterm::Result<()> {
@@ -192,6 +196,8 @@ fn exit() -> crossterm::Result<()> {
 }
 
 fn main() -> crossterm::Result<()> {
+    // 0 for test done
+    // -1 for quit
     let opt = Opt::from_args();
 
     if opt.list_languages {
@@ -211,16 +217,18 @@ fn main() -> crossterm::Result<()> {
             return Ok(());
         };
 
-        if run_test(Test::new(contents))? {
-            match event::read()? {
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char('r'),
-                    modifiers: KeyModifiers::NONE,
-                }) => (),
-                _ => break,
+        match run_test(Test::new(contents))? {
+            0 => {
+                match event::read()? {
+                    Event::Key(KeyEvent {
+                        code: KeyCode::Tab,
+                        modifiers: KeyModifiers::NONE,
+                    }) => (),
+                    _ => break,
+                }
             }
-        } else {
-            return exit();
+            -1 => break,
+            _ => break,
         }
     }
     exit()
