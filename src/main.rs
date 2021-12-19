@@ -197,7 +197,7 @@ fn main() -> crossterm::Result<()> {
         return Ok(());
     }
 
-    loop {
+    'tests: loop {
         let contents = opt.gen_contents().expect(
             "Couldn't get test contents. Make sure the specified language actually exists.",
         );
@@ -207,12 +207,18 @@ fn main() -> crossterm::Result<()> {
         };
 
         if run_test(Test::new(contents))? {
-            match event::read()? {
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char('r'),
-                    modifiers: KeyModifiers::NONE,
-                }) => (),
-                _ => break,
+            loop {
+                match event::read()? {
+                    Event::Key(KeyEvent {
+                        code: KeyCode::Char('r'),
+                        modifiers: KeyModifiers::NONE,
+                    }) => break,
+                    Event::Key(KeyEvent {
+                        code: KeyCode::Char('q'),
+                        modifiers: KeyModifiers::NONE,
+                    }) => break 'tests,
+                    _ => (),
+                }
             }
         } else {
             return exit();
