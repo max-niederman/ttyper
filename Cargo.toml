@@ -1,7 +1,7 @@
 [package]
 name = "ttyper"
 description = "Terminal-based typing test."
-version = "0.3.1"
+version = "0.3.2"
 readme = "README.md"
 repository = "https://github.com/max-niederman/ttyper.git"
 homepage = "https://github.com/max-niederman/ttyper"
@@ -12,7 +12,7 @@ edition = "2018"
 [dependencies]
 structopt = "0.3"
 dirs = "4.0"
-crossterm = "0.21"
+crossterm = "0.22"
 rust-embed = "6.2"
 
 [dependencies.tui]
