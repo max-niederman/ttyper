@@ -31,6 +31,7 @@ struct Opt {
     #[structopt(parse(from_os_str))]
     contents: Option<PathBuf>,
 
+    #[allow(dead_code)]
     #[structopt(short, long)]
     debug: bool,
 

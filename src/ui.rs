@@ -184,6 +184,10 @@ impl Widget for &results::Results {
             .margin(1) // Graph looks tremendously better with just a little margin
             .constraints([Constraint::Ratio(1, 3), Constraint::Ratio(2, 3)])
             .split(chunks[0]);
+        let info_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
+            .split(res_chunks[0]);
 
         let exit = Span::styled(
             "Press any key to finish or 'r' for a another test.",
@@ -200,8 +204,7 @@ impl Widget for &results::Results {
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::Cyan),
         );
-
-        info_text.extend(vec![
+        info_text.extend([
             Spans::from(format!(
                 "Adjusted WPM: {:.1}",
                 self.timing.overall_cps * WPM_PER_CPS * f64::from(self.accuracy.overall)
@@ -210,9 +213,20 @@ impl Widget for &results::Results {
                 "Accuracy: {:.1}%",
                 f64::from(self.accuracy.overall) * 100f64
             )),
-            Spans::from(format!("Raw WPM: {:.1}", self.timing.overall_cps * WPM_PER_CPS)),
+            Spans::from(format!(
+                "Raw WPM: {:.1}",
+                self.timing.overall_cps * WPM_PER_CPS
+            )),
             Spans::from(format!("Correct Keypresses: {}", self.accuracy.overall)),
         ]);
+        let overview = Paragraph::new(info_text).block(
+            Block::default()
+                .title(Spans::from(vec![Span::styled("Overview", title_style)]))
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Cyan)),
+        );
+        overview.render(info_chunks[0], buf);
 
         let mut worst_keys: Vec<(&KeyEvent, &Fraction)> = self
             .accuracy
@@ -222,8 +236,13 @@ impl Widget for &results::Results {
             .collect();
         worst_keys.sort_unstable_by_key(|x| x.1);
 
-        info_text.extend(iter::once(Spans::from("Worst Keys:")));
-        info_text.extend(
+        let mut worst_text = Text::styled(
+            "",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Cyan),
+        );
+        worst_text.extend(
             worst_keys
                 .iter()
                 .take(5)
@@ -240,15 +259,14 @@ impl Widget for &results::Results {
                 })
                 .map(Spans::from),
         );
-
-        let info = Paragraph::new(info_text).block(
+        let worst = Paragraph::new(worst_text).block(
             Block::default()
-                .title(Spans::from(vec![Span::styled("Results", title_style)]))
+                .title(Spans::from(vec![Span::styled("Worst Keys", title_style)]))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(Color::Cyan)),
         );
-        info.render(res_chunks[0], buf);
+        worst.render(info_chunks[1], buf);
 
         let wpm_sma: Vec<(f64, f64)> = self
             .timing
