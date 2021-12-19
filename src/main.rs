@@ -70,22 +70,23 @@ impl Opt {
                         Resources::get(&format!("language/{}", self.language))
                             .map(|f| f.data.into_owned())
                     })?;
-                let language: Vec<&str> = str::from_utf8(&bytes)
+
+                let mut language: Vec<&str> = str::from_utf8(&bytes)
                     .expect("Language file had non-utf8 encoding.")
                     .lines()
                     .collect();
 
-                let mut words: Vec<String> = language
-                    .into_iter()
-                    .cycle()
-                    .take(self.words.into())
-                    .map(String::from)
-                    .collect();
-
                 let mut rng = thread_rng();
-                words.shuffle(&mut rng);
+                language.shuffle(&mut rng);
 
-                Some(words)
+                Some(
+                    language
+                        .into_iter()
+                        .cycle()
+                        .take(self.words.into())
+                        .map(String::from)
+                        .collect(),
+                )
             }
         }
     }
