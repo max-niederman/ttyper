@@ -1,6 +1,12 @@
 # Rust
 target/
 
+# Nix
+result
+
+# Direnv
+.direnv/
+
 # Editor
 .vim/
 .nvimrc
