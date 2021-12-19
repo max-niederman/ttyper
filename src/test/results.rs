@@ -56,9 +56,9 @@ impl PartialResults for Test {
     }
 }
 
-// Instead of storing WPM, we store CPS (clicks per second)
-pub struct CpsData {
-    pub overall: f64,
+pub struct TimingData {
+    // Instead of storing WPM, we store CPS (clicks per second)
+    pub overall_cps: f64,
     pub per_event: Vec<f64>,
     pub per_key: HashMap<KeyEvent, f64>,
 }
@@ -69,7 +69,7 @@ pub struct AccuracyData {
 }
 
 pub struct Results {
-    pub cps: CpsData,
+    pub timing: TimingData,
     pub accuracy: AccuracyData,
 }
 
@@ -78,16 +78,16 @@ impl From<Test> for Results {
         let events: Vec<&super::TestEvent> =
             test.words.iter().flat_map(|w| w.events.iter()).collect();
         Self {
-            cps: {
-                let mut cps = CpsData {
-                    overall: 0f64,
+            timing: {
+                let mut timing = TimingData {
+                    overall_cps: -1.0,
                     per_event: Vec::new(),
                     per_key: HashMap::new(),
                 };
 
+                // map of keys to a two-tuple (total time, clicks) for counting average
                 let mut keys: HashMap<KeyEvent, (f64, usize)> = HashMap::new();
 
-                // NOTE: this should really be optimized to use less than O(n) space
                 for win in events.windows(2) {
                     let event_dur = win[1]
                         .time
@@ -95,7 +95,7 @@ impl From<Test> for Results {
                         .map(|d| d.as_secs_f64());
 
                     if let Some(event_dur) = event_dur {
-                        cps.per_event.push(event_dur);
+                        timing.per_event.push(event_dur);
 
                         let key = keys.entry(win[1].key).or_insert((0.0, 0));
                         key.0 += event_dur;
@@ -103,14 +103,15 @@ impl From<Test> for Results {
                     }
                 }
 
-                cps.per_key = keys
+                timing.per_key = keys
                     .into_iter()
-                    .map(|(key, (total, count))| (key, count as f64 / total))
+                    .map(|(key, (total, count))| (key, total / count as f64))
                     .collect();
 
-                cps.overall = cps.per_event.len() as f64 / cps.per_event.iter().sum::<f64>();
+                timing.overall_cps =
+                    timing.per_event.len() as f64 / timing.per_event.iter().sum::<f64>();
 
-                cps
+                timing
             },
             accuracy: {
                 let mut acc = AccuracyData {

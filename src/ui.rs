@@ -13,7 +13,7 @@ use tui::{
     widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType, Paragraph, Widget},
 };
 
-// Convert WPM to CPS (clicks per second)
+// Convert CPS to WPM (clicks per second)
 const WPM_PER_CPS: f64 = 12.0;
 
 // Width of the moving average window for the WPM chart
@@ -204,13 +204,13 @@ impl Widget for &results::Results {
         info_text.extend(vec![
             Spans::from(format!(
                 "Adjusted WPM: {:.1}",
-                self.cps.overall * WPM_PER_CPS * f64::from(self.accuracy.overall)
+                self.timing.overall_cps * WPM_PER_CPS * f64::from(self.accuracy.overall)
             )),
             Spans::from(format!(
                 "Accuracy: {:.1}%",
                 f64::from(self.accuracy.overall) * 100f64
             )),
-            Spans::from(format!("Raw WPM: {:.1}", self.cps.overall * WPM_PER_CPS)),
+            Spans::from(format!("Raw WPM: {:.1}", self.timing.overall_cps * WPM_PER_CPS)),
             Spans::from(format!("Correct Keypresses: {}", self.accuracy.overall)),
         ]);
 
@@ -251,15 +251,14 @@ impl Widget for &results::Results {
         info.render(res_chunks[0], buf);
 
         let wpm_sma: Vec<(f64, f64)> = self
-            .cps
+            .timing
             .per_event
             .windows(WPM_SMA_WIDTH)
             .enumerate()
             .map(|(i, window)| {
                 (
                     (i + WPM_SMA_WIDTH) as f64,
-                    window.iter().copied().map(f64::recip).sum::<f64>() * WPM_PER_CPS
-                        / window.len() as f64,
+                    window.len() as f64 / window.iter().copied().sum::<f64>() * WPM_PER_CPS,
                 )
             })
             .collect();
@@ -285,7 +284,7 @@ impl Widget for &results::Results {
             .x_axis(
                 Axis::default()
                     .title(Span::styled("Keypresses", Style::default().fg(Color::Cyan)))
-                    .bounds([0.0, self.cps.per_event.len() as f64]),
+                    .bounds([0.0, self.timing.per_event.len() as f64]),
             )
             .y_axis(
                 Axis::default()
