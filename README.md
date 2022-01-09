@@ -14,7 +14,7 @@ Ttyper is a terminal-based typing test built with Rust and tui-rs.
 
 ### pre-built binaries
 
-Pre-built binaries are available for most architectures on [GitHub releases](https://github.com/max-niederman/ttyper/releases). If your system is not supported or you have another issue, feel free to open an issue.
+Pre-built binaries are available for most architectures on [GitHub releases](https://github.com/max-niederman/ttyper/releases). If your system is not supported or you have another problem, feel free to open an issue.
 
 ### cargo
 
