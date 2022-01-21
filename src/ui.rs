@@ -125,7 +125,7 @@ impl Widget for &Test {
                             .collect::<String>()
                             + " ",
                         Style::default()
-                            .fg(Color::Yellow)
+                            .fg(Color::Blue)
                             .add_modifier(Modifier::BOLD),
                     ),
                 ]))
@@ -306,7 +306,10 @@ impl Widget for &results::Results {
             )
             .y_axis(
                 Axis::default()
-                    .title(Span::styled("WPM (10-keypress rolling average)", Style::default().fg(Color::Gray)))
+                    .title(Span::styled(
+                        "WPM (10-keypress rolling average)",
+                        Style::default().fg(Color::Gray),
+                    ))
                     .bounds([wpm_sma_min, wpm_sma_max])
                     .labels(
                         (wpm_sma_min as u16..wpm_sma_max as u16)
