@@ -53,40 +53,24 @@ impl Test {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) {
-        if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('h') {
-            if self.words[self.current_word].progress.is_empty() {
-                self.last_word();
-            }
-
-            let word = &mut self.words[self.current_word];
-
-            word.events.push(TestEvent {
-                time: Instant::now(),
-                correct: None,
-                key,
-            });
-            word.progress.clear();
-            return;
-        }
-
         let word = &mut self.words[self.current_word];
         match key.code {
             KeyCode::Char(' ') | KeyCode::Enter => {
-                if !word.progress.is_empty() {
-                    if word.text.chars().nth(word.progress.len()) != Some(' ') {
-                        word.events.push(TestEvent {
-                            time: Instant::now(),
-                            correct: Some(word.text == word.progress),
-                            key,
-                        });
-                        self.next_word();
-                    } else {
+                if !word.progress.is_empty() || word.text.is_empty() {
+                    if word.text.chars().nth(word.progress.len()) == Some(' ') {
                         word.progress.push(' ');
                         word.events.push(TestEvent {
                             time: Instant::now(),
                             correct: Some(true),
                             key,
                         })
+                    } else {
+                        word.events.push(TestEvent {
+                            time: Instant::now(),
+                            correct: Some(word.text == word.progress),
+                            key,
+                        });
+                        self.next_word();
                     }
                 }
             }
@@ -101,6 +85,22 @@ impl Test {
                     });
                     word.progress.pop();
                 }
+            }
+            // CTRL-BackSpace
+            KeyCode::Char('h') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                if self.words[self.current_word].progress.is_empty() {
+                    self.last_word();
+                }
+
+                let word = &mut self.words[self.current_word];
+
+                word.events.push(TestEvent {
+                    time: Instant::now(),
+                    correct: None,
+                    key,
+                });
+                word.progress.clear();
+                return;
             }
             KeyCode::Char(c) => {
                 word.progress.push(c);
