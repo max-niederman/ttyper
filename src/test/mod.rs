@@ -56,22 +56,21 @@ impl Test {
         let word = &mut self.words[self.current_word];
         match key.code {
             KeyCode::Char(' ') | KeyCode::Enter => {
-                if !word.progress.is_empty() || word.text.is_empty() {
-                    if word.text.chars().nth(word.progress.len()) == Some(' ') {
-                        word.progress.push(' ');
-                        word.events.push(TestEvent {
-                            time: Instant::now(),
-                            correct: Some(true),
-                            key,
-                        })
-                    } else {
-                        word.events.push(TestEvent {
-                            time: Instant::now(),
-                            correct: Some(word.text == word.progress),
-                            key,
-                        });
-                        self.next_word();
-                    }
+
+                if word.text.chars().nth(word.progress.len()) == Some(' ') {
+                    word.progress.push(' ');
+                    word.events.push(TestEvent {
+                        time: Instant::now(),
+                        correct: Some(true),
+                        key,
+                    })
+                } else if !word.progress.is_empty() || word.text.is_empty() {
+                    word.events.push(TestEvent {
+                        time: Instant::now(),
+                        correct: Some(word.text == word.progress),
+                        key,
+                    });
+                    self.next_word();
                 }
             }
             KeyCode::Backspace => {
