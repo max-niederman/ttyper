@@ -56,7 +56,6 @@ impl Test {
         let word = &mut self.words[self.current_word];
         match key.code {
             KeyCode::Char(' ') | KeyCode::Enter => {
-
                 if word.text.chars().nth(word.progress.len()) == Some(' ') {
                     word.progress.push(' ');
                     word.events.push(TestEvent {
@@ -99,7 +98,6 @@ impl Test {
                     key,
                 });
                 word.progress.clear();
-                return;
             }
             KeyCode::Char(c) => {
                 word.progress.push(c);
