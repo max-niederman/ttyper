@@ -89,3 +89,13 @@ macro_rules!
 {:?}
 format!
 unwrap()
+pub fn
+#![inline]
+#![inline(always)]
+#![inline(never)]
+#[derive(Clone, Copy)]
+struct foobar
+use std::io::ErrorKind::other;
+pub fn new(foo: &str, bar: i16) -> Self
+match foo
+for bar in baz.into_iter()
