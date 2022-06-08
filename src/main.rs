@@ -64,7 +64,8 @@ impl Opt {
                 let bytes: Vec<u8> = self
                     .language_file
                     .as_ref()
-                    .map(|p| fs::read(p).ok())
+                    .map(fs::read)
+                    .map(Result::ok)
                     .flatten()
                     .or_else(|| fs::read(self.language_dir().join(&self.language)).ok())
                     .or_else(|| {
@@ -72,22 +73,21 @@ impl Opt {
                             .map(|f| f.data.into_owned())
                     })?;
 
-                let mut language: Vec<&str> = str::from_utf8(&bytes)
+                let language: Vec<&str> = str::from_utf8(&bytes)
                     .expect("Language file had non-utf8 encoding.")
                     .lines()
                     .collect();
 
-                let mut rng = thread_rng();
-                language.shuffle(&mut rng);
+                let mut contents: Vec<_> = language
+                    .into_iter()
+                    .cycle()
+                    .take(self.words.get())
+                    .map(ToOwned::to_owned)
+                    .collect();
 
-                Some(
-                    language
-                        .into_iter()
-                        .cycle()
-                        .take(self.words.into())
-                        .map(String::from)
-                        .collect(),
-                )
+                contents.shuffle(&mut thread_rng());
+
+                Some(contents)
             }
         }
     }
