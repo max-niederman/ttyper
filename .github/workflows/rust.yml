@@ -3,8 +3,8 @@ name: Rust
 on: [push, pull_request]
 
 jobs:
-  check:
-    name: Check
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: Setup | Checkout
@@ -17,10 +17,10 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Check
+      - name: Test
         uses: actions-rs/cargo@v1
         with:
-          command: check 
+          command: test
 
   fmt:
     name: Rustfmt
