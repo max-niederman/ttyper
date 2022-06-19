@@ -42,7 +42,6 @@ fn main() -> std::io::Result<()> {
     let install_path = dirs::config_dir()
         .expect("Couldn't find a configuration directory to install to.")
         .join("ttyper");
-    fs::remove_dir_all(&install_path);
     fs::create_dir_all(&install_path);
 
     let resources_path = env::current_dir()

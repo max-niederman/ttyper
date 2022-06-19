@@ -1,6 +1,8 @@
+mod config;
 mod test;
 mod ui;
 
+use config::Config;
 use test::{results::Results, Test};
 
 use crossterm::{
@@ -31,18 +33,20 @@ struct Opt {
     #[structopt(parse(from_os_str))]
     contents: Option<PathBuf>,
 
-    #[allow(dead_code)]
     #[structopt(short, long)]
     debug: bool,
 
     #[structopt(short, long, default_value = "50")]
     words: num::NonZeroUsize,
 
+    #[structopt(short, long)]
+    config: Option<PathBuf>,
+
     #[structopt(long, parse(from_os_str))]
     language_file: Option<PathBuf>,
 
-    #[structopt(short, long, default_value = "english200")]
-    language: String,
+    #[structopt(short, long)]
+    language: Option<String>,
 
     /// List installed languages
     #[structopt(long)]
@@ -61,15 +65,20 @@ impl Opt {
                 Some(lines.iter().map(String::from).collect())
             }
             None => {
+                let lang_name = self
+                    .language
+                    .clone()
+                    .unwrap_or_else(|| self.config().default_language);
+
                 let bytes: Vec<u8> = self
                     .language_file
                     .as_ref()
                     .map(fs::read)
                     .map(Result::ok)
                     .flatten()
-                    .or_else(|| fs::read(self.language_dir().join(&self.language)).ok())
+                    .or_else(|| fs::read(self.language_dir().join(&lang_name)).ok())
                     .or_else(|| {
-                        Resources::get(&format!("language/{}", self.language))
+                        Resources::get(&format!("language/{}", &lang_name))
                             .map(|f| f.data.into_owned())
                     })?;
 
@@ -90,6 +99,17 @@ impl Opt {
                 Some(contents)
             }
         }
+    }
+
+    /// Configuration
+    fn config(&self) -> Config {
+        fs::read(
+            self.config
+                .clone()
+                .unwrap_or_else(|| self.config_dir().join("config.toml")),
+        )
+        .map(|bytes| toml::from_slice(&bytes).expect("Configuration was ill-formed."))
+        .unwrap_or_default()
     }
 
     /// Installed languages under config directory
@@ -115,7 +135,7 @@ impl Opt {
     }
 }
 
-fn run_test(mut test: Test) -> crossterm::Result<bool> {
+fn run_test(config: &Config, mut test: Test) -> crossterm::Result<bool> {
     let mut stdout = io::stdout();
     execute!(
         stdout,
@@ -129,7 +149,7 @@ fn run_test(mut test: Test) -> crossterm::Result<bool> {
 
     terminal.clear()?;
     terminal.draw(|f| {
-        f.render_widget(&test, f.size());
+        f.render_widget(config.theme.apply_to(&test), f.size());
     })?;
 
     // Enable raw mode to read keys
@@ -154,12 +174,12 @@ fn run_test(mut test: Test) -> crossterm::Result<bool> {
                 }
 
                 terminal.draw(|f| {
-                    f.render_widget(&test, f.size());
+                    f.render_widget(config.theme.apply_to(&test), f.size());
                 })?;
             }
             Event::Resize(_, _) => {
                 terminal.draw(|f| {
-                    f.render_widget(&test, f.size());
+                    f.render_widget(config.theme.apply_to(&test), f.size());
                 })?;
             }
             _ => {}
@@ -170,7 +190,7 @@ fn run_test(mut test: Test) -> crossterm::Result<bool> {
     let results = Results::from(test);
     terminal.clear()?;
     terminal.draw(|f| {
-        f.render_widget(&results, f.size());
+        f.render_widget(config.theme.apply_to(&results), f.size());
     })?;
     Ok(true)
 }
@@ -188,6 +208,11 @@ fn exit() -> crossterm::Result<()> {
 
 fn main() -> crossterm::Result<()> {
     let opt = Opt::from_args();
+    let config = opt.config();
+
+    if opt.debug {
+        dbg!(&config);
+    }
 
     if opt.list_languages {
         opt.languages()
@@ -206,7 +231,7 @@ fn main() -> crossterm::Result<()> {
             return Ok(());
         };
 
-        if run_test(Test::new(contents))? {
+        if run_test(&config, Test::new(contents))? {
             loop {
                 match event::read()? {
                     Event::Key(KeyEvent {

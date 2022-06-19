@@ -1,3 +1,5 @@
+use crate::config::Theme;
+
 use super::test::{results, Test};
 
 use crossterm::event::KeyCode;
@@ -31,7 +33,7 @@ impl SizedBlock<'_> {
     }
 }
 
-trait UsedWidget {}
+trait UsedWidget: Widget {}
 impl UsedWidget for Paragraph<'_> {}
 
 trait DrawInner<T> {
@@ -45,22 +47,38 @@ impl DrawInner<&Spans<'_>> for SizedBlock<'_> {
     }
 }
 
-impl<T> DrawInner<T> for SizedBlock<'_>
-where
-    T: Widget + UsedWidget,
-{
+impl<T: UsedWidget> DrawInner<T> for SizedBlock<'_> {
     fn draw_inner(&self, content: T, buf: &mut Buffer) {
         let inner = self.block.inner(self.area);
         content.render(inner, buf);
     }
 }
 
-impl Widget for &Test {
+pub trait ThemedWidget {
+    fn render(self, area: Rect, buf: &mut Buffer, theme: &Theme);
+}
+
+pub struct Themed<'t, W: ?Sized> {
+    theme: &'t Theme,
+    widget: W,
+}
+impl<'t, W: ThemedWidget> Widget for Themed<'t, W> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        // Styles
-        let title_style = Style::default()
-            .patch(Style::default().add_modifier(Modifier::BOLD))
-            .patch(Style::default().fg(Color::White));
+        self.widget.render(area, buf, self.theme)
+    }
+}
+impl Theme {
+    pub fn apply_to<W>(&self, widget: W) -> Themed<'_, W> {
+        Themed {
+            theme: self,
+            widget,
+        }
+    }
+}
+
+impl ThemedWidget for &Test {
+    fn render(self, area: Rect, buf: &mut Buffer, theme: &Theme) {
+        buf.set_style(area, theme.default);
 
         // Chunks
         let chunks = Layout::default()
@@ -71,10 +89,10 @@ impl Widget for &Test {
         // Sections
         let input = SizedBlock {
             block: Block::default()
-                .title(Spans::from(vec![Span::styled("Input", title_style)]))
+                .title(Spans::from(vec![Span::styled("Input", theme.title)]))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Cyan)),
+                .border_style(theme.input_border),
             area: chunks[0],
         };
         input.draw_inner(
@@ -92,10 +110,11 @@ impl Widget for &Test {
                 .chain(self.words[..self.current_word].iter().map(|w| {
                     vec![Span::styled(
                         w.text.clone() + " ",
-                        Style::default().fg(match w.progress == w.text {
-                            true => Color::Green,
-                            false => Color::Red,
-                        }),
+                        if w.progress == w.text {
+                            theme.prompt_correct
+                        } else {
+                            theme.prompt_incorrect
+                        },
                     )]
                 }))
                 .chain(iter::once(vec![
@@ -105,17 +124,14 @@ impl Widget for &Test {
                             .chars()
                             .take(progress_ind)
                             .collect::<String>(),
-                        Style::default()
-                            .fg(
-                                match self.words[self.current_word]
-                                    .text
-                                    .starts_with(&self.words[self.current_word].progress[..])
-                                {
-                                    true => Color::Green,
-                                    false => Color::Red,
-                                },
-                            )
-                            .add_modifier(Modifier::BOLD),
+                        if self.words[self.current_word]
+                            .text
+                            .starts_with(&self.words[self.current_word].progress[..])
+                        {
+                            theme.prompt_current_correct
+                        } else {
+                            theme.prompt_current_incorrect
+                        },
                     ),
                     Span::styled(
                         self.words[self.current_word]
@@ -124,17 +140,14 @@ impl Widget for &Test {
                             .skip(progress_ind)
                             .collect::<String>()
                             + " ",
-                        Style::default()
-                            .fg(Color::Blue)
-                            .add_modifier(Modifier::BOLD),
+                        theme.prompt_current_untyped,
                     ),
                 ]))
-                .chain(self.words[self.current_word + 1..].iter().map(|w| {
-                    vec![Span::styled(
-                        w.text.clone() + " ",
-                        Style::default().fg(Color::Gray),
-                    )]
-                }));
+                .chain(
+                    self.words[self.current_word + 1..]
+                        .iter()
+                        .map(|w| vec![Span::styled(w.text.clone() + " ", theme.prompt_untyped)]),
+                );
 
             let mut lines: Vec<Spans> = Vec::new();
             let mut current_line: Vec<Span> = Vec::new();
@@ -158,21 +171,18 @@ impl Widget for &Test {
         };
         let target = Paragraph::new(target_lines).block(
             Block::default()
-                .title(Spans::from(vec![Span::styled("Prompt", title_style)]))
+                .title(Span::styled("Prompt", theme.title))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Green)),
+                .border_style(theme.prompt_border),
         );
         target.render(chunks[1], buf);
     }
 }
 
-impl Widget for &results::Results {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        // Styles
-        let title_style = Style::default()
-            .patch(Style::default().add_modifier(Modifier::BOLD))
-            .patch(Style::default().fg(Color::White));
+impl ThemedWidget for &results::Results {
+    fn render(self, area: Rect, buf: &mut Buffer, theme: &Theme) {
+        buf.set_style(area, theme.default);
 
         // Chunks
         let chunks = Layout::default()
@@ -191,20 +201,13 @@ impl Widget for &results::Results {
 
         let exit = Span::styled(
             "Press 'q' to quit or 'r' for another test.",
-            Style::default()
-                .fg(Color::Gray)
-                .add_modifier(Modifier::ITALIC),
+            theme.results_restart_prompt,
         );
         buf.set_span(chunks[1].x, chunks[1].y, &exit, chunks[1].width);
 
         // Sections
-        let mut info_text = Text::styled(
-            "",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(Color::Cyan),
-        );
-        info_text.extend([
+        let mut overview_text = Text::styled("", theme.results_overview);
+        overview_text.extend([
             Spans::from(format!(
                 "Adjusted WPM: {:.1}",
                 self.timing.overall_cps * WPM_PER_CPS * f64::from(self.accuracy.overall)
@@ -219,12 +222,12 @@ impl Widget for &results::Results {
             )),
             Spans::from(format!("Correct Keypresses: {}", self.accuracy.overall)),
         ]);
-        let overview = Paragraph::new(info_text).block(
+        let overview = Paragraph::new(overview_text).block(
             Block::default()
-                .title(Spans::from(vec![Span::styled("Overview", title_style)]))
+                .title(Span::styled("Overview", theme.title))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Cyan)),
+                .border_style(theme.results_overview_border),
         );
         overview.render(info_chunks[0], buf);
 
@@ -236,12 +239,7 @@ impl Widget for &results::Results {
             .collect();
         worst_keys.sort_unstable_by_key(|x| x.1);
 
-        let mut worst_text = Text::styled(
-            "",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(Color::Cyan),
-        );
+        let mut worst_text = Text::styled("", theme.results_worst_keys);
         worst_text.extend(
             worst_keys
                 .iter()
@@ -261,10 +259,10 @@ impl Widget for &results::Results {
         );
         let worst = Paragraph::new(worst_text).block(
             Block::default()
-                .title(Spans::from(vec![Span::styled("Worst Keys", title_style)]))
+                .title(Span::styled("Worst Keys", theme.title))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Cyan)),
+                .border_style(theme.results_worst_keys_border),
         );
         worst.render(info_chunks[1], buf);
 
@@ -294,21 +292,24 @@ impl Widget for &results::Results {
             .name("WPM")
             .marker(Marker::Braille)
             .graph_type(GraphType::Line)
-            .style(Style::default().fg(Color::Cyan))
+            .style(theme.results_chart)
             .data(&wpm_sma)];
 
         let wpm_chart = Chart::new(wpm_datasets)
-            .block(Block::default().title("Chart"))
+            .block(
+                Block::default()
+                    .title(vec![Span::styled("Chart", theme.title)])
+            )
             .x_axis(
                 Axis::default()
-                    .title(Span::styled("Keypresses", Style::default().fg(Color::Cyan)))
+                    .title(Span::styled("Keypresses", theme.results_chart_x))
                     .bounds([0.0, self.timing.per_event.len() as f64]),
             )
             .y_axis(
                 Axis::default()
                     .title(Span::styled(
                         "WPM (10-keypress rolling average)",
-                        Style::default().fg(Color::Gray),
+                        theme.results_chart_y,
                     ))
                     .bounds([wpm_sma_min, wpm_sma_max])
                     .labels(
