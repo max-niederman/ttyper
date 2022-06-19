@@ -60,7 +60,7 @@ jobs:
     steps:
       - name: Setup | Checkout
         uses: actions/checkout@v2
-      
+
       - name: Setup | Toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -100,6 +100,27 @@ jobs:
           name: ${{ matrix.name }}
           path: ${{ matrix.name }}
 
+  crates-io-release:
+    name: crates.io Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup | Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup | Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Publish
+        uses: actions-rs/cargo@v1
+        with:
+          command: publish
+          args: --token ${{ secrets.CRATES_IO_TOKEN }}
+
   github-release:
     name: GitHub Release
     needs: binaries
@@ -116,10 +137,10 @@ jobs:
         run: for file in ttyper-*/ttyper-*; do openssl dgst -sha256 -r "$file" | awk '{print $1}' > "${file}.sha256"; done
 
       - name: Publish
-        uses: marvinpinto/action-automatic-releases@latest 
+        uses: marvinpinto/action-automatic-releases@latest
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: false # TODO: Check tag to test for prereleases
+          prerelease: ${{ contains(github.ref_name, 'pre') }}
           files: |
             ttyper-*/ttyper-*
             LICENSE.md
