@@ -36,15 +36,19 @@ struct Opt {
     #[structopt(short, long)]
     debug: bool,
 
+    /// Specify word count
     #[structopt(short, long, default_value = "50")]
     words: num::NonZeroUsize,
 
+    /// Use config file
     #[structopt(short, long)]
     config: Option<PathBuf>,
 
+    /// Specify test language in file
     #[structopt(long, parse(from_os_str))]
     language_file: Option<PathBuf>,
 
+    /// Specify test language
     #[structopt(short, long)]
     language: Option<String>,
 

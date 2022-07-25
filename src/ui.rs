@@ -9,7 +9,6 @@ use std::iter;
 use tui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
     symbols::Marker,
     text::{Span, Spans, Text},
     widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType, Paragraph, Widget},
@@ -296,10 +295,7 @@ impl ThemedWidget for &results::Results {
             .data(&wpm_sma)];
 
         let wpm_chart = Chart::new(wpm_datasets)
-            .block(
-                Block::default()
-                    .title(vec![Span::styled("Chart", theme.title)])
-            )
+            .block(Block::default().title(vec![Span::styled("Chart", theme.title)]))
             .x_axis(
                 Axis::default()
                     .title(Span::styled("Keypresses", theme.results_chart_x))

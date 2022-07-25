@@ -24,7 +24,30 @@ cargo install ttyper
 
 ## usage
 
-For usage instructions, you can run `ttyper --help`.
+For usage instructions, you can run `ttyper --help`:
+
+```
+ttyper 1.0.0-pre.1
+Terminal-based typing test.
+
+USAGE:
+    ttyper [FLAGS] [OPTIONS] [contents]
+
+FLAGS:
+    -d, --debug             
+    -h, --help              Prints help information
+        --list-languages    List installed languages
+    -V, --version           Prints version information
+
+OPTIONS:
+    -c, --config <config>                  Use config file
+    -l, --language <language>              Specify test language
+        --language-file <language-file>    Specify test language in file
+    -w, --words <words>                    Specify word count [default: 50]
+
+ARGS:
+    <contents>
+```
 
 ### examples
 
@@ -33,6 +56,7 @@ For usage instructions, you can run `ttyper --help`.
 | `ttyper`                       |   50 of the 200 most common english words |
 | `ttyper -w 100`                |  100 of the 200 most common English words |
 | `ttyper -w 100 -l english1000` | 100 of the 1000 most common English words |
+| `ttyper --language-file lang`  |      50 random words from the file `lang` |
 | `ttyper text.txt`              |  contents of `text.txt` split at newlines |
 
 ## languages

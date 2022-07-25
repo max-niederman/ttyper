@@ -226,6 +226,7 @@ where
     deserializer.deserialize_str(ColorVisitor)
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
