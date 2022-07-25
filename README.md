@@ -54,6 +54,7 @@ The following languages are available by default:
 | `javascript`       | The Javascript programming language |
 | `norwegian`        |     200 most common Norwegian words |
 | `php`              |        The PHP programming language |
+| `portuguese`       |    100 most common Portuguese words |
 | `python`           |     The Python programming language |
 | `qt`               |                The QT GUI framework |
 | `ruby`             |       The Ruby programming language |
