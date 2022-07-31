@@ -161,17 +161,18 @@ fn run_test(config: &Config, mut test: Test) -> crossterm::Result<bool> {
 
     loop {
         match event::read()? {
-            Event::Key(key) => {
-                if key.modifiers.contains(KeyModifiers::CONTROL) {
-                    if let KeyCode::Char('c') = key.code {
-                        return Ok(false);
-                    };
-                }
+            Event::Key(KeyEvent {
+                code: KeyCode::Char('c'),
+                modifiers: KeyModifiers::CONTROL,
+            }) => return Ok(false),
 
-                match key.code {
-                    KeyCode::Esc => break,
-                    _ => test.handle_key(key),
-                }
+            Event::Key(KeyEvent {
+                code: KeyCode::Esc,
+                modifiers: KeyModifiers::NONE,
+            }) => break,
+
+            Event::Key(key) => {
+                test.handle_key(key);
 
                 if test.complete {
                     break;
@@ -181,6 +182,7 @@ fn run_test(config: &Config, mut test: Test) -> crossterm::Result<bool> {
                     f.render_widget(config.theme.apply_to(&test), f.size());
                 })?;
             }
+
             Event::Resize(_, _) => {
                 terminal.draw(|f| {
                     f.render_widget(config.theme.apply_to(&test), f.size());
@@ -220,7 +222,7 @@ fn main() -> crossterm::Result<()> {
 
     if opt.list_languages {
         opt.languages()
-            .expect("Couldn't get installed languages under config directory.")
+            .expect("Couldn't get installed languages under config directory. Make sure the config directory exists.")
             .iter()
             .for_each(|name| println!("{}", name.to_str().expect("Ill-formatted language name.")));
         return Ok(());
@@ -242,10 +244,16 @@ fn main() -> crossterm::Result<()> {
                         code: KeyCode::Char('r'),
                         modifiers: KeyModifiers::NONE,
                     }) => break,
+
                     Event::Key(KeyEvent {
                         code: KeyCode::Char('q'),
                         modifiers: KeyModifiers::NONE,
+                    })
+                    | Event::Key(KeyEvent {
+                        code: KeyCode::Char('c'),
+                        modifiers: KeyModifiers::CONTROL,
                     }) => break 'tests,
+
                     _ => (),
                 }
             }
