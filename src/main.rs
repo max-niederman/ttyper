@@ -86,10 +86,13 @@ impl Opt {
                             .map(|f| f.data.into_owned())
                     })?;
 
-                let language: Vec<&str> = str::from_utf8(&bytes)
+                let mut rng = thread_rng();
+
+                let mut language: Vec<&str> = str::from_utf8(&bytes)
                     .expect("Language file had non-utf8 encoding.")
                     .lines()
                     .collect();
+                language.shuffle(&mut rng);
 
                 let mut contents: Vec<_> = language
                     .into_iter()
@@ -97,8 +100,7 @@ impl Opt {
                     .take(self.words.get())
                     .map(ToOwned::to_owned)
                     .collect();
-
-                contents.shuffle(&mut thread_rng());
+                contents.shuffle(&mut rng);
 
                 Some(contents)
             }
