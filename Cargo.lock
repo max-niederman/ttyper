@@ -541,7 +541,7 @@ dependencies = [
 
 [[package]]
 name = "ttyper"
-version = "1.0.0-pre.1"
+version = "1.0.0-pre.2"
 dependencies = [
  "crossterm",
  "dirs",
