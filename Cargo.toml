@@ -12,7 +12,7 @@ edition = "2018"
 [dependencies]
 structopt = "0.3"
 dirs = "4.0"
-crossterm = "0.23"
+crossterm = "0.25"
 rust-embed = "6.2"
 toml = "0.5"
 

@@ -166,11 +166,13 @@ fn run_test(config: &Config, mut test: Test) -> crossterm::Result<bool> {
             Event::Key(KeyEvent {
                 code: KeyCode::Char('c'),
                 modifiers: KeyModifiers::CONTROL,
+                ..
             }) => return Ok(false),
 
             Event::Key(KeyEvent {
                 code: KeyCode::Esc,
                 modifiers: KeyModifiers::NONE,
+                ..
             }) => break,
 
             Event::Key(key) => {
@@ -245,15 +247,18 @@ fn main() -> crossterm::Result<()> {
                     Event::Key(KeyEvent {
                         code: KeyCode::Char('r'),
                         modifiers: KeyModifiers::NONE,
+                        ..
                     }) => break,
 
                     Event::Key(KeyEvent {
                         code: KeyCode::Char('q'),
                         modifiers: KeyModifiers::NONE,
+                        ..
                     })
                     | Event::Key(KeyEvent {
                         code: KeyCode::Char('c'),
                         modifiers: KeyModifiers::CONTROL,
+                        ..
                     }) => break 'tests,
 
                     _ => (),
