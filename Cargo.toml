@@ -13,11 +13,11 @@ edition = "2018"
 structopt = "0.3"
 dirs = "4.0"
 crossterm = "0.25"
-rust-embed = "6.2"
+rust-embed = "6.4"
 toml = "0.5"
 
 [dependencies.tui]
-version = "0.18"
+version = "0.19"
 default-features = false
 features = ["crossterm"]
 
