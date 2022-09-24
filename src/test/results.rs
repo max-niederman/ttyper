@@ -73,10 +73,11 @@ pub struct Results {
     pub accuracy: AccuracyData,
 }
 
-impl From<Test> for Results {
-    fn from(test: Test) -> Self {
+impl From<&Test> for Results {
+    fn from(test: &Test) -> Self {
         let events: Vec<&super::TestEvent> =
             test.words.iter().flat_map(|w| w.events.iter()).collect();
+
         Self {
             timing: {
                 let mut timing = TimingData {

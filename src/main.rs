@@ -141,79 +141,31 @@ impl Opt {
     }
 }
 
-fn run_test(config: &Config, mut test: Test) -> crossterm::Result<bool> {
-    let mut stdout = io::stdout();
-    execute!(
-        stdout,
-        cursor::Hide,
-        cursor::SavePosition,
-        terminal::EnterAlternateScreen,
-    )?;
-
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
-    terminal.clear()?;
-    terminal.draw(|f| {
-        f.render_widget(config.theme.apply_to(&test), f.size());
-    })?;
-
-    // Enable raw mode to read keys
-    terminal::enable_raw_mode()?;
-
-    loop {
-        match event::read()? {
-            Event::Key(KeyEvent {
-                code: KeyCode::Char('c'),
-                modifiers: KeyModifiers::CONTROL,
-                ..
-            }) => return Ok(false),
-
-            Event::Key(KeyEvent {
-                code: KeyCode::Esc,
-                modifiers: KeyModifiers::NONE,
-                ..
-            }) => break,
-
-            Event::Key(key) => {
-                test.handle_key(key);
-
-                if test.complete {
-                    break;
-                }
-
-                terminal.draw(|f| {
-                    f.render_widget(config.theme.apply_to(&test), f.size());
-                })?;
-            }
-
-            Event::Resize(_, _) => {
-                terminal.draw(|f| {
-                    f.render_widget(config.theme.apply_to(&test), f.size());
-                })?;
-            }
-            _ => {}
-        }
-    }
-
-    // Draw results
-    let results = Results::from(test);
-    terminal.clear()?;
-    terminal.draw(|f| {
-        f.render_widget(config.theme.apply_to(&results), f.size());
-    })?;
-    Ok(true)
+enum State {
+    Test(Test),
+    Results(Results),
 }
 
-fn exit() -> crossterm::Result<()> {
-    terminal::disable_raw_mode()?;
-    execute!(
-        io::stdout(),
-        cursor::RestorePosition,
-        cursor::Show,
-        terminal::LeaveAlternateScreen,
-    )?;
-    Ok(())
+impl State {
+    fn render_into<B: tui::backend::Backend>(
+        &self,
+        terminal: &mut Terminal<B>,
+        config: &Config,
+    ) -> crossterm::Result<()> {
+        match self {
+            State::Test(test) => {
+                terminal.draw(|f| {
+                    f.render_widget(config.theme.apply_to(test), f.size());
+                })?;
+            }
+            State::Results(results) => {
+                terminal.draw(|f| {
+                    f.render_widget(config.theme.apply_to(results), f.size());
+                })?;
+            }
+        }
+        Ok(())
+    }
 }
 
 fn main() -> crossterm::Result<()> {
@@ -232,41 +184,84 @@ fn main() -> crossterm::Result<()> {
         return Ok(());
     }
 
-    'tests: loop {
-        let contents = opt.gen_contents().expect(
-            "Couldn't get test contents. Make sure the specified language actually exists.",
-        );
-        if contents.is_empty() {
-            println!("Test contents were empty. Exiting...");
-            return Ok(());
-        };
+    let backend = CrosstermBackend::new(io::stdout());
+    let mut terminal = Terminal::new(backend)?;
 
-        if run_test(&config, Test::new(contents))? {
-            loop {
-                match event::read()? {
-                    Event::Key(KeyEvent {
-                        code: KeyCode::Char('r'),
-                        modifiers: KeyModifiers::NONE,
-                        ..
-                    }) => break,
+    terminal::enable_raw_mode()?;
+    execute!(
+        io::stdout(),
+        cursor::Hide,
+        cursor::SavePosition,
+        terminal::EnterAlternateScreen,
+    )?;
+    terminal.clear()?;
 
-                    Event::Key(KeyEvent {
-                        code: KeyCode::Char('q'),
-                        modifiers: KeyModifiers::NONE,
-                        ..
-                    })
-                    | Event::Key(KeyEvent {
-                        code: KeyCode::Char('c'),
-                        modifiers: KeyModifiers::CONTROL,
-                        ..
-                    }) => break 'tests,
+    let mut state = State::Test(Test::new(opt.gen_contents().expect(
+        "Couldn't get test contents. Make sure the specified language actually exists.",
+    )));
 
-                    _ => (),
+    state.render_into(&mut terminal, &config)?;
+    loop {
+        let event = event::read()?;
+
+        // handle exit controls
+        match event {
+            Event::Key(KeyEvent {
+                code: KeyCode::Char('c'),
+                modifiers: KeyModifiers::CONTROL,
+                ..
+            }) => break,
+            Event::Key(KeyEvent {
+                code: KeyCode::Esc,
+                modifiers: KeyModifiers::NONE,
+                ..
+            }) => match state {
+                State::Test(ref test) => {
+                    state = State::Results(Results::from(test));
+                }
+                State::Results(_) => break,
+            },
+            _ => {}
+        }
+
+        match state {
+            State::Test(ref mut test) => {
+                if let Event::Key(key) = event {
+                    test.handle_key(key);
+                    if test.complete {
+                        state = State::Results(Results::from(&*test));
+                    }
                 }
             }
-        } else {
-            return exit();
+            State::Results(_) => match event {
+                Event::Key(KeyEvent {
+                    code: KeyCode::Char('r'),
+                    modifiers: KeyModifiers::NONE,
+                    ..
+                }) => {
+                    state = State::Test(Test::new(opt.gen_contents().expect(
+                            "Couldn't get test contents. Make sure the specified language actually exists.",
+                        )));
+                }
+                Event::Key(KeyEvent {
+                    code: KeyCode::Char('q'),
+                    modifiers: KeyModifiers::NONE,
+                    ..
+                }) => break,
+                _ => {}
+            },
         }
+
+        state.render_into(&mut terminal, &config)?;
     }
-    exit()
+
+    terminal::disable_raw_mode()?;
+    execute!(
+        io::stdout(),
+        cursor::RestorePosition,
+        cursor::Show,
+        terminal::LeaveAlternateScreen,
+    )?;
+
+    Ok(())
 }
