@@ -27,7 +27,7 @@ cargo install ttyper
 For usage instructions, you can run `ttyper --help`:
 
 ```
-ttyper 1.0.0-pre.1
+ttyper 1.0.0
 Terminal-based typing test.
 
 USAGE:
