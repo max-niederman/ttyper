@@ -118,7 +118,7 @@ impl Opt {
         .unwrap_or_default()
     }
 
-    /// Installed languages under config directory
+    /// Installed languages under data directory
     fn languages(&self) -> io::Result<Vec<OsString>> {
         Ok(self
             .language_dir()
@@ -135,9 +135,16 @@ impl Opt {
             .join("ttyper")
     }
 
-    /// Language directory under config directory
+    /// Data directory
+    fn data_dir(&self) -> PathBuf {
+        dirs::data_dir()
+            .expect("Failed to find data directory.")
+            .join("ttyper")
+    }
+
+    /// Language directory under data directory
     fn language_dir(&self) -> PathBuf {
-        self.config_dir().join("language")
+        self.data_dir().join("language")
     }
 }
 
@@ -178,7 +185,7 @@ fn main() -> crossterm::Result<()> {
 
     if opt.list_languages {
         opt.languages()
-            .expect("Couldn't get installed languages under config directory. Make sure the config directory exists.")
+            .expect("Couldn't get installed languages under data directory. Make sure the data directory exists.")
             .iter()
             .for_each(|name| println!("{}", name.to_str().expect("Ill-formatted language name.")));
         return Ok(());
