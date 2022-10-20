@@ -84,6 +84,7 @@ The following languages are available by default:
 | `ruby`             |       The Ruby programming language |
 | `rust`             |       The Rust programming language |
 | `spanish`          |       100 most common Spanish words |
+| `ukrainian`        |     100 most common Ukrainian words |
 
 Additional languages can be added by creating a file in `TTYPER_CONFIG_DIR/language` with a word on each line. On Linux, the config directory is `$HOME/.config/ttyper`; on Windows, it's `C:\Users\user\AppData\Roaming\ttyper`; and on macOS it's `$HOME/Library/Application Support/ttyper`.
 
