@@ -71,6 +71,7 @@ The following languages are available by default:
 | `english200`       |       200 most common English words |
 | `english1000`      |      1000 most common English words |
 | `english-advanced` |              Advanced English words |
+| `english-pirate`   |       50 pirate speak English words |
 | `german`           |        207 most common German words |
 | `go`               |         The Go programming language |
 | `html`             |           HyperText Markup Language |
