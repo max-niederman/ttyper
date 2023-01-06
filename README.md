@@ -73,6 +73,8 @@ The following languages are available by default:
 | `english-advanced` |              Advanced English words |
 | `english-pirate`   |       50 pirate speak English words |
 | `german`           |        207 most common German words |
+| `german1000`       |       1000 most common German words |
+| `german10000`      |      10000 most common German words |
 | `go`               |         The Go programming language |
 | `html`             |           HyperText Markup Language |
 | `java`             |       The Java programming language |
