@@ -22,6 +22,12 @@ Pre-built binaries are available for most architectures on [GitHub releases](htt
 cargo install ttyper
 ```
 
+### scoop
+
+```bash
+scoop install ttyper
+```
+
 ## usage
 
 For usage instructions, you can run `ttyper --help`:
@@ -34,7 +40,7 @@ USAGE:
     ttyper [FLAGS] [OPTIONS] [contents]
 
 FLAGS:
-    -d, --debug             
+    -d, --debug
     -h, --help              Prints help information
         --list-languages    List installed languages
     -V, --version           Prints version information
