@@ -192,7 +192,7 @@ fn main() -> crossterm::Result<()> {
 
     if opt.list_languages {
         opt.languages()
-            .expect("Couldn't get installed languages under config directory. Make sure the config directory exists.")
+            .expect("Couldn't get installed languages under the config directory. Make sure the config and language directory exist.")
             .iter()
             .for_each(|name| println!("{}", name.to_str().expect("Ill-formatted language name.")));
         return Ok(());
