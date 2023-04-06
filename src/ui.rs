@@ -179,7 +179,9 @@ impl ThemedWidget for &Test {
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(theme.prompt_border),
-        );
+
+        )
+            .alignment(theme.block_alignment);
         target.render(chunks[1], buf);
     }
 }

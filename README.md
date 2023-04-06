@@ -138,6 +138,9 @@ prompt_current_untyped = "blue;bold"
 # cursor character
 prompt_cursor = "none;underlined"
 
+# paragraph alignment
+block_alignment = "center"
+
 ## results styles ##
 
 # overview text

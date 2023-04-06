@@ -2,7 +2,10 @@ use serde::{
     de::{self, IntoDeserializer},
     Deserialize,
 };
-use tui::style::{Color, Modifier, Style};
+use tui::{
+    layout::Alignment,
+    style::{Color, Modifier, Style},
+};
 
 #[derive(Debug, Deserialize)]
 #[serde(default)]
@@ -50,6 +53,9 @@ pub struct Theme {
 
     #[serde(deserialize_with = "deserialize_style")]
     pub prompt_cursor: Style,
+
+    #[serde(deserialize_with = "deserialize_align")]
+    pub block_alignment: Alignment,
 
     // results widget
     #[serde(deserialize_with = "deserialize_style")]
@@ -118,6 +124,7 @@ impl Default for Theme {
             results_restart_prompt: Style::default()
                 .fg(Color::Gray)
                 .add_modifier(Modifier::ITALIC),
+            block_alignment: Alignment::Left,
         }
     }
 }
@@ -229,6 +236,33 @@ where
     }
 
     deserializer.deserialize_str(ColorVisitor)
+}
+
+fn deserialize_align<'de, D>(deserializer: D) -> Result<Alignment, D::Error>
+where
+    D: de::Deserializer<'de>,
+{
+    struct AlignmentVisitor;
+    impl<'de> de::Visitor<'de> for AlignmentVisitor {
+        type Value = Alignment;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("an alignment")
+        }
+
+        fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
+            match value {
+                "left" => Ok(Alignment::Left),
+                "center" => Ok(Alignment::Center),
+                "right" => Ok(Alignment::Right),
+                _ => Err(E::invalid_value(
+                    de::Unexpected::Str(value),
+                    &"an alignment",
+                )),
+            }
+        }
+    }
+    deserializer.deserialize_str(AlignmentVisitor)
 }
 
 #[cfg(test)]
