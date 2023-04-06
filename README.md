@@ -33,14 +33,14 @@ scoop install ttyper
 For usage instructions, you can run `ttyper --help`:
 
 ```
-ttyper 1.0.0
+ttyper 1.1.0
 Terminal-based typing test.
 
 USAGE:
     ttyper [FLAGS] [OPTIONS] [contents]
 
 FLAGS:
-    -d, --debug
+    -d, --debug             
     -h, --help              Prints help information
         --list-languages    List installed languages
     -V, --version           Prints version information
@@ -134,6 +134,9 @@ prompt_current_correct = "green;bold"
 prompt_current_incorrect = "red;bold"
 # untyped letters in current word
 prompt_current_untyped = "blue;bold"
+
+# cursor character
+prompt_cursor = "none;underlined"
 
 ## results styles ##
 
