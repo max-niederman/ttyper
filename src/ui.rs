@@ -101,11 +101,8 @@ impl ThemedWidget for &Test {
         input.render(buf);
 
         let target_lines: Vec<Spans> = {
-            let progress_ind = self.words[self.current_word]
-                .progress
-                .len()
-                .min(self.words[self.current_word].text.len());
             let words = iter::empty::<Vec<Span>>()
+                // already typed words
                 .chain(self.words[..self.current_word].iter().map(|w| {
                     vec![Span::styled(
                         w.text.clone() + " ",
@@ -116,32 +113,43 @@ impl ThemedWidget for &Test {
                         },
                     )]
                 }))
-                .chain(iter::once(vec![
-                    Span::styled(
-                        self.words[self.current_word]
-                            .text
-                            .chars()
-                            .take(progress_ind)
-                            .collect::<String>(),
-                        if self.words[self.current_word]
-                            .text
-                            .starts_with(&self.words[self.current_word].progress[..])
-                        {
-                            theme.prompt_current_correct
-                        } else {
-                            theme.prompt_current_incorrect
-                        },
-                    ),
-                    Span::styled(
-                        self.words[self.current_word]
-                            .text
-                            .chars()
-                            .skip(progress_ind)
-                            .collect::<String>()
-                            + " ",
-                        theme.prompt_current_untyped,
-                    ),
-                ]))
+                // current word
+                .chain({
+                    let progress_ind = self.words[self.current_word]
+                        .progress
+                        .len()
+                        .min(self.words[self.current_word].text.len());
+
+                    let correct = self.words[self.current_word]
+                        .text
+                        .starts_with(&self.words[self.current_word].progress[..]);
+
+                    let (typed, untyped) =
+                        self.words[self.current_word].text.split_at(progress_ind);
+
+                    let untyped_formatted = format!("{} ", untyped);
+                    let (cursor, remaining) = untyped_formatted.split_at(1);
+
+                    iter::once(vec![
+                        Span::styled(
+                            typed,
+                            if correct {
+                                theme.prompt_current_correct
+                            } else {
+                                theme.prompt_current_incorrect
+                            },
+                        ),
+                        Span::styled(
+                            cursor.to_owned(),
+                            theme.prompt_current_untyped.patch(theme.prompt_cursor),
+                        ),
+                        Span::styled(
+                            remaining.to_owned(),
+                            theme.prompt_current_untyped,
+                        ),
+                    ])
+                })
+                // remaining words
                 .chain(
                     self.words[self.current_word + 1..]
                         .iter()

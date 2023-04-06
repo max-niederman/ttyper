@@ -78,8 +78,7 @@ impl Opt {
                     .language_file
                     .as_ref()
                     .map(fs::read)
-                    .map(Result::ok)
-                    .flatten()
+                    .and_then(Result::ok)
                     .or_else(|| fs::read(self.language_dir().join(&lang_name)).ok())
                     .or_else(|| {
                         Resources::get(&format!("language/{}", &lang_name))
