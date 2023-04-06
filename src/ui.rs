@@ -143,10 +143,7 @@ impl ThemedWidget for &Test {
                             cursor.to_owned(),
                             theme.prompt_current_untyped.patch(theme.prompt_cursor),
                         ),
-                        Span::styled(
-                            remaining.to_owned(),
-                            theme.prompt_current_untyped,
-                        ),
+                        Span::styled(remaining.to_owned(), theme.prompt_current_untyped),
                     ])
                 })
                 // remaining words
