@@ -61,11 +61,20 @@ impl Opt {
     fn gen_contents(&self) -> Option<Vec<String>> {
         match &self.contents {
             Some(path) => {
-                let file = fs::File::open(path).expect("Error reading language file.");
-                let lines: Vec<String> = io::BufReader::new(file)
-                    .lines()
-                    .filter_map(Result::ok)
-                    .collect();
+                let lines: Vec<String> = if path.as_os_str() == "-" {
+                    std::io::stdin()
+                        .lock()
+                        .lines()
+                        .filter_map(Result::ok)
+                        .collect()
+                } else {
+                    let file = fs::File::open(path).expect("Error reading language file.");
+                    io::BufReader::new(file)
+                        .lines()
+                        .filter_map(Result::ok)
+                        .collect()
+                };
+
                 Some(lines.iter().map(String::from).collect())
             }
             None => {
@@ -169,8 +178,11 @@ impl State {
 
 fn main() -> crossterm::Result<()> {
     let opt = Opt::from_args();
-    let config = opt.config();
+    if opt.debug {
+        dbg!(&opt);
+    }
 
+    let config = opt.config();
     if opt.debug {
         dbg!(&config);
     }
