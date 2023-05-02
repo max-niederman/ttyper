@@ -125,10 +125,15 @@ impl ThemedWidget for &Test {
                         .starts_with(&self.words[self.current_word].progress[..]);
 
                     let (typed, untyped) =
-                        self.words[self.current_word].text.split_at(progress_ind);
+                        self.words[self.current_word]
+                            .text
+                            .split_at(ceil_char_boundary(
+                                &self.words[self.current_word].text,
+                                progress_ind,
+                            ));
 
-                    let untyped_formatted = format!("{} ", untyped);
-                    let (cursor, remaining) = untyped_formatted.split_at(1);
+                    let mut remaining = untyped.chars().chain(iter::once(' '));
+                    let cursor = remaining.next().unwrap();
 
                     iter::once(vec![
                         Span::styled(
@@ -140,10 +145,10 @@ impl ThemedWidget for &Test {
                             },
                         ),
                         Span::styled(
-                            cursor.to_owned(),
+                            cursor.to_string(),
                             theme.prompt_current_untyped.patch(theme.prompt_cursor),
                         ),
-                        Span::styled(remaining.to_owned(), theme.prompt_current_untyped),
+                        Span::styled(remaining.collect::<String>(), theme.prompt_current_untyped),
                     ])
                 })
                 // remaining words
@@ -321,5 +326,14 @@ impl ThemedWidget for &results::Results {
                     ),
             );
         wpm_chart.render(res_chunks[1], buf);
+    }
+}
+
+// FIXME: replace with `str::ceil_char_boundary` when stable
+fn ceil_char_boundary(string: &str, index: usize) -> usize {
+    if string.is_char_boundary(index) {
+        index
+    } else {
+        ceil_char_boundary(string, index + 1)
     }
 }
