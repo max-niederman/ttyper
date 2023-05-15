@@ -73,16 +73,12 @@ impl Test {
                 }
             }
             KeyCode::Backspace => {
-                if word.progress.is_empty() {
-                    self.last_word();
-                } else {
-                    word.events.push(TestEvent {
-                        time: Instant::now(),
-                        correct: Some(!word.text.starts_with(&word.progress[..])),
-                        key,
-                    });
-                    word.progress.pop();
-                }
+                word.events.push(TestEvent {
+                    time: Instant::now(),
+                    correct: Some(!word.text.starts_with(&word.progress[..])),
+                    key,
+                });
+                word.progress.pop();
             }
             // CTRL-BackSpace
             KeyCode::Char('h') if key.modifiers.contains(KeyModifiers::CONTROL) => {
