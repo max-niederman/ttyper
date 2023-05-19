@@ -55,6 +55,10 @@ struct Opt {
     /// List installed languages
     #[structopt(long)]
     list_languages: bool,
+
+    /// Enable no backtrack between words
+    #[structopt(long)]
+    no_backtrack: bool,
 }
 
 impl Opt {
@@ -248,7 +252,7 @@ fn main() -> crossterm::Result<()> {
         match state {
             State::Test(ref mut test) => {
                 if let Event::Key(key) = event {
-                    test.handle_key(key);
+                    test.handle_key(key, opt.no_backtrack);
                     if test.complete {
                         state = State::Results(Results::from(&*test));
                     }

@@ -40,6 +40,7 @@ USAGE:
     ttyper [FLAGS] [OPTIONS] [contents]
 
 FLAGS:
+        --no-backtrack      Enable no backtrack between words
     -d, --debug             
     -h, --help              Prints help information
         --list-languages    List installed languages

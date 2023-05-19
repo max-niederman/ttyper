@@ -52,7 +52,7 @@ impl Test {
         }
     }
 
-    pub fn handle_key(&mut self, key: KeyEvent) {
+    pub fn handle_key(&mut self, key: KeyEvent, no_backtrack: bool) {
         if key.kind != KeyEventKind::Press {
             return;
         }
@@ -77,7 +77,7 @@ impl Test {
                 }
             }
             KeyCode::Backspace => {
-                if word.progress.is_empty() {
+                if word.progress.is_empty() && !no_backtrack {
                     self.last_word();
                 } else {
                     word.events.push(TestEvent {
