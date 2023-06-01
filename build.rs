@@ -48,7 +48,7 @@ fn main() -> std::io::Result<()> {
         .expect("Couldn't find the source directory.")
         .join("resources")
         .join("runtime");
-    copy(&resources_path, &install_path);
+    copy(resources_path, &install_path);
 
     Ok(())
 }

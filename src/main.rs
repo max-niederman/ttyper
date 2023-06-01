@@ -115,6 +115,7 @@ impl Opt {
         }
     }
 
+
     /// Configuration
     fn config(&self) -> Config {
         fs::read(
@@ -122,7 +123,7 @@ impl Opt {
                 .clone()
                 .unwrap_or_else(|| self.config_dir().join("config.toml")),
         )
-        .map(|bytes| toml::from_slice(&bytes).expect("Configuration was ill-formed."))
+        .map(|bytes| toml::from_str(str::from_utf8(&bytes).unwrap_or_default()).expect("Configuration was ill-formed."))
         .unwrap_or_default()
     }
 
