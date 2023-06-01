@@ -6,11 +6,11 @@ use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use results::Fraction;
 use std::iter;
-use tui::{
+use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     symbols::Marker,
-    text::{Span, Spans, Text},
+    text::{Span, Line, Text},
     widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType, Paragraph, Widget},
 };
 
@@ -39,10 +39,10 @@ trait DrawInner<T> {
     fn draw_inner(&self, content: T, buf: &mut Buffer);
 }
 
-impl DrawInner<&Spans<'_>> for SizedBlock<'_> {
-    fn draw_inner(&self, content: &Spans, buf: &mut Buffer) {
+impl DrawInner<&Line<'_>> for SizedBlock<'_> {
+    fn draw_inner(&self, content: &Line, buf: &mut Buffer) {
         let inner = self.block.inner(self.area);
-        buf.set_spans(inner.x, inner.y, content, inner.width);
+        buf.set_line(inner.x, inner.y, content, inner.width);
     }
 }
 
@@ -88,19 +88,19 @@ impl ThemedWidget for &Test {
         // Sections
         let input = SizedBlock {
             block: Block::default()
-                .title(Spans::from(vec![Span::styled("Input", theme.title)]))
+                .title(Line::from(vec![Span::styled("Input", theme.title)]))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(theme.input_border),
             area: chunks[0],
         };
         input.draw_inner(
-            &Spans::from(self.words[self.current_word].progress.clone()),
+            &Line::from(self.words[self.current_word].progress.clone()),
             buf,
         );
         input.render(buf);
 
-        let target_lines: Vec<Spans> = {
+        let target_lines: Vec<Line> = {
             let words = iter::empty::<Vec<Span>>()
                 // already typed words
                 .chain(self.words[..self.current_word].iter().map(|w| {
@@ -158,7 +158,7 @@ impl ThemedWidget for &Test {
                         .map(|w| vec![Span::styled(w.text.clone() + " ", theme.prompt_untyped)]),
                 );
 
-            let mut lines: Vec<Spans> = Vec::new();
+            let mut lines: Vec<Line> = Vec::new();
             let mut current_line: Vec<Span> = Vec::new();
             let mut current_width = 0;
             for word in words {
@@ -166,7 +166,7 @@ impl ThemedWidget for &Test {
 
                 if current_width + word_width > chunks[1].width as usize - 2 {
                     current_line.push(Span::raw("\n"));
-                    lines.push(Spans::from(current_line.clone()));
+                    lines.push(Line::from(current_line.clone()));
                     current_line.clear();
                     current_width = 0;
                 }
@@ -174,7 +174,7 @@ impl ThemedWidget for &Test {
                 current_line.extend(word);
                 current_width += word_width;
             }
-            lines.push(Spans::from(current_line));
+            lines.push(Line::from(current_line));
 
             lines
         };
@@ -217,19 +217,19 @@ impl ThemedWidget for &results::Results {
         // Sections
         let mut overview_text = Text::styled("", theme.results_overview);
         overview_text.extend([
-            Spans::from(format!(
+            Line::from(format!(
                 "Adjusted WPM: {:.1}",
                 self.timing.overall_cps * WPM_PER_CPS * f64::from(self.accuracy.overall)
             )),
-            Spans::from(format!(
+            Line::from(format!(
                 "Accuracy: {:.1}%",
                 f64::from(self.accuracy.overall) * 100f64
             )),
-            Spans::from(format!(
+            Line::from(format!(
                 "Raw WPM: {:.1}",
                 self.timing.overall_cps * WPM_PER_CPS
             )),
-            Spans::from(format!("Correct Keypresses: {}", self.accuracy.overall)),
+            Line::from(format!("Correct Keypresses: {}", self.accuracy.overall)),
         ]);
         let overview = Paragraph::new(overview_text).block(
             Block::default()
@@ -264,7 +264,7 @@ impl ThemedWidget for &results::Results {
                         None
                     }
                 })
-                .map(Spans::from),
+                .map(Line::from),
         );
         let worst = Paragraph::new(worst_text).block(
             Block::default()

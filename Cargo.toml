@@ -16,10 +16,8 @@ crossterm = "^0.26"
 rust-embed = "^6.4"
 toml = "^0.7"
 
-[dependencies.tui]
-version = "^0.19"
-default-features = false
-features = ["crossterm"]
+[dependencies.ratatui]
+version = "^0.21"
 
 [dependencies.rand]
 version = "^0.8"

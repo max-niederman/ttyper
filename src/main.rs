@@ -21,7 +21,7 @@ use std::{
     str,
 };
 use structopt::StructOpt;
-use tui::{backend::CrosstermBackend, terminal::Terminal};
+use ratatui::{backend::CrosstermBackend, terminal::Terminal};
 
 #[derive(RustEmbed)]
 #[folder = "resources/runtime"]
@@ -156,7 +156,7 @@ enum State {
 }
 
 impl State {
-    fn render_into<B: tui::backend::Backend>(
+    fn render_into<B: ratatui::backend::Backend>(
         &self,
         terminal: &mut Terminal<B>,
         config: &Config,

@@ -2,7 +2,7 @@ use serde::{
     de::{self, IntoDeserializer},
     Deserialize,
 };
-use tui::style::{Color, Modifier, Style};
+use ratatui::style::{Color, Modifier, Style};
 
 #[derive(Debug, Deserialize)]
 #[serde(default)]
