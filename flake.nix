@@ -21,7 +21,7 @@
       in
       rec {
         # `nix build`
-        packages.ttyper = naersk-lib.buildPackage rec {
+        packages.ttyper = naersk-lib.buildPackage {
           pname = "ttyper";
           root = ./.;
         };
