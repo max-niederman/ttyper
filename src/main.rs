@@ -21,7 +21,7 @@ use std::{
     str,
 };
 use structopt::StructOpt;
-use tui::{backend::CrosstermBackend, terminal::Terminal};
+use ratatui::{backend::CrosstermBackend, terminal::Terminal};
 
 #[derive(RustEmbed)]
 #[folder = "resources/runtime"]
@@ -115,6 +115,7 @@ impl Opt {
         }
     }
 
+
     /// Configuration
     fn config(&self) -> Config {
         fs::read(
@@ -122,7 +123,7 @@ impl Opt {
                 .clone()
                 .unwrap_or_else(|| self.config_dir().join("config.toml")),
         )
-        .map(|bytes| toml::from_slice(&bytes).expect("Configuration was ill-formed."))
+        .map(|bytes| toml::from_str(str::from_utf8(&bytes).unwrap_or_default()).expect("Configuration was ill-formed."))
         .unwrap_or_default()
     }
 
@@ -155,7 +156,7 @@ enum State {
 }
 
 impl State {
-    fn render_into<B: tui::backend::Backend>(
+    fn render_into<B: ratatui::backend::Backend>(
         &self,
         terminal: &mut Terminal<B>,
         config: &Config,

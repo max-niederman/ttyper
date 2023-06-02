@@ -7,27 +7,25 @@ repository = "https://github.com/max-niederman/ttyper.git"
 homepage = "https://github.com/max-niederman/ttyper"
 license = "MIT"
 authors = ["Max Niederman <max@maxniederman.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-structopt = "0.3"
-dirs = "4.0"
-crossterm = "0.25"
-rust-embed = "6.4"
-toml = "0.5"
+structopt = "^0.3"
+dirs = "^5.0"
+crossterm = "^0.26"
+rust-embed = "^6.4"
+toml = "^0.7"
 
-[dependencies.tui]
-version = "0.19"
-default-features = false
-features = ["crossterm"]
+[dependencies.ratatui]
+version = "^0.21"
 
 [dependencies.rand]
-version = "0.8"
+version = "^0.8"
 features = ["alloc"]
 
 [dependencies.serde]
-version = "1.0"
+version = "^1.0"
 features = ["derive"]
 
 [build-dependencies]
-dirs = "4.0"
+dirs = "^5.0"
