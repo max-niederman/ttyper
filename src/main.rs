@@ -1,6 +1,11 @@
 mod test;
 
-use std::{num::{self, NonZeroUsize}, path::PathBuf};
+use std::{
+    num::{self, NonZeroUsize},
+    path::PathBuf,
+};
+
+use test::contents::LexerLanguage;
 
 #[derive(Debug, clap::Parser)]
 struct Opt {
@@ -15,7 +20,12 @@ struct Opt {
 enum Command {
     /// Reads test contents from a file.
     File {
+        /// Path to the file.
         path: PathBuf,
+
+        /// Language with which to lex the file.
+        #[clap(short, long, default_value = "extended-grapheme-clusters")]
+        lexer_language: LexerLanguage,
     },
     /// Generates random words for test contents.
     Words {
@@ -29,7 +39,7 @@ enum Command {
         /// Take first N words from the language while sampling.
         #[clap(short = 'c', long)]
         language_cutoff: Option<NonZeroUsize>,
-    }
+    },
 }
 
 fn main() {

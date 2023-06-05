@@ -4,19 +4,22 @@ use std::str::FromStr;
 ///
 /// The iterator should yield the smallest chunks of the
 /// test that should not be split across line breaks.
-pub trait Contents<I = String>: Iterator<Item = I> + Sized {
-    /// Returns the next, restarted test, if possible.
+pub trait Contents: Iterator<Item = String> + MaybeRestartable {}
+
+pub trait MaybeRestartable: Sized {
+    /// Returns a restarted value, if possible.
     fn restart(self) -> Option<Self>;
 }
 
-pub struct Lexed<C: Contents<char>> {
-    inner: C,
+#[derive(Debug, Clone, Copy)]
+pub struct Lexed<I> {
+    inner: I,
     language: LexerLanguage,
 }
 
-impl<C> Iterator for Lexed<C>
+impl<I> Iterator for Lexed<I>
 where
-    C: Contents<char>
+    I: Iterator<Item = char>,
 {
     type Item = String;
 
@@ -25,9 +28,9 @@ where
     }
 }
 
-impl<C> Contents<String> for Lexed<C>
+impl<I> MaybeRestartable for Lexed<I>
 where
-    C: Contents<char>
+    I: MaybeRestartable,
 {
     fn restart(self) -> Option<Self> {
         Some(Self {
@@ -37,9 +40,10 @@ where
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum LexerLanguage {
     English,
-    ExtendedGraphemeClusters
+    ExtendedGraphemeClusters,
 }
 
 impl Default for LexerLanguage {
