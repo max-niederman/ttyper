@@ -5,7 +5,7 @@ use std::{
     path::PathBuf,
 };
 
-use test::contents::LexerLanguage;
+use test::contents::Lexer;
 
 #[derive(Debug, clap::Parser)]
 struct Opt {
@@ -25,7 +25,7 @@ enum Command {
 
         /// Language with which to lex the file.
         #[clap(short, long, default_value = "extended-grapheme-clusters")]
-        lexer_language: LexerLanguage,
+        lexer: Lexer,
     },
     /// Generates random words for test contents.
     Words {

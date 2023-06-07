@@ -4,55 +4,30 @@ use std::str::FromStr;
 ///
 /// The iterator should yield the smallest chunks of the
 /// test that should not be split across line breaks.
-pub trait Contents: Iterator<Item = String> + MaybeRestartable {}
-
-pub trait MaybeRestartable: Sized {
-    /// Returns a restarted value, if possible.
+pub trait Contents: Iterator<Item = String> + Sized {
+    /// Returns the contents of the next, restarted test, if possible.
     fn restart(self) -> Option<Self>;
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Lexed<I> {
-    inner: I,
-    language: LexerLanguage,
+pub enum Lexer {
+    ExtendedGraphemeClusters,
+    English,
 }
 
-impl<I> Iterator for Lexed<I>
-where
-    I: Iterator<Item = char>,
-{
-    type Item = String;
-
-    fn next(&mut self) -> Option<Self::Item> {
+impl Lexer {
+    fn consume_lexeme(&self, bytes: impl Iterator<Item = u8>) -> String {
         todo!()
     }
 }
 
-impl<I> MaybeRestartable for Lexed<I>
-where
-    I: MaybeRestartable,
-{
-    fn restart(self) -> Option<Self> {
-        Some(Self {
-            inner: self.inner.restart()?,
-            language: self.language,
-        })
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum LexerLanguage {
-    English,
-    ExtendedGraphemeClusters,
-}
-
-impl Default for LexerLanguage {
+impl Default for Lexer {
     fn default() -> Self {
         Self::ExtendedGraphemeClusters
     }
 }
 
-impl FromStr for LexerLanguage {
+impl FromStr for Lexer {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
