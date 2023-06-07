@@ -1,8 +1,8 @@
+use ratatui::style::{Color, Modifier, Style};
 use serde::{
     de::{self, IntoDeserializer},
     Deserialize,
 };
-use ratatui::style::{Color, Modifier, Style};
 
 #[derive(Debug, Deserialize)]
 #[serde(default)]

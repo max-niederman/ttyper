@@ -4,15 +4,15 @@ use super::test::{results, Test};
 
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
-use results::Fraction;
-use std::iter;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     symbols::Marker,
-    text::{Span, Line, Text},
+    text::{Line, Span, Text},
     widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType, Paragraph, Widget},
 };
+use results::Fraction;
+use std::iter;
 
 // Convert CPS to WPM (clicks per second)
 const WPM_PER_CPS: f64 = 12.0;

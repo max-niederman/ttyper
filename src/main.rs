@@ -7,10 +7,11 @@ use test::{results::Results, Test};
 
 use crossterm::{
     self, cursor,
-    event::{self, Event, KeyCode, KeyEvent, KeyModifiers, KeyEventKind},
+    event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     execute, terminal,
 };
 use rand::{seq::SliceRandom, thread_rng};
+use ratatui::{backend::CrosstermBackend, terminal::Terminal};
 use rust_embed::RustEmbed;
 use std::{
     ffi::OsString,
@@ -21,7 +22,6 @@ use std::{
     str,
 };
 use structopt::StructOpt;
-use ratatui::{backend::CrosstermBackend, terminal::Terminal};
 
 #[derive(RustEmbed)]
 #[folder = "resources/runtime"]
@@ -115,7 +115,6 @@ impl Opt {
         }
     }
 
-
     /// Configuration
     fn config(&self) -> Config {
         fs::read(
@@ -123,7 +122,10 @@ impl Opt {
                 .clone()
                 .unwrap_or_else(|| self.config_dir().join("config.toml")),
         )
-        .map(|bytes| toml::from_str(str::from_utf8(&bytes).unwrap_or_default()).expect("Configuration was ill-formed."))
+        .map(|bytes| {
+            toml::from_str(str::from_utf8(&bytes).unwrap_or_default())
+                .expect("Configuration was ill-formed.")
+        })
         .unwrap_or_default()
     }
 

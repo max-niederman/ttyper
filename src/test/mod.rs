@@ -1,6 +1,6 @@
 pub mod results;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, KeyEventKind};
+use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::fmt;
 use std::time::Instant;
 
