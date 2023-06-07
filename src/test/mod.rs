@@ -1,6 +1,6 @@
 pub mod results;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, KeyEventKind};
 use std::fmt;
 use std::time::Instant;
 
@@ -53,6 +53,10 @@ impl Test {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) {
+        if key.kind != KeyEventKind::Press {
+            return;
+        }
+
         let word = &mut self.words[self.current_word];
         match key.code {
             KeyCode::Char(' ') | KeyCode::Enter => {

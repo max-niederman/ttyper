@@ -7,7 +7,7 @@ use test::{results::Results, Test};
 
 use crossterm::{
     self, cursor,
-    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
+    event::{self, Event, KeyCode, KeyEvent, KeyModifiers, KeyEventKind},
     execute, terminal,
 };
 use rand::{seq::SliceRandom, thread_rng};
@@ -220,11 +220,13 @@ fn main() -> crossterm::Result<()> {
         match event {
             Event::Key(KeyEvent {
                 code: KeyCode::Char('c'),
+                kind: KeyEventKind::Press,
                 modifiers: KeyModifiers::CONTROL,
                 ..
             }) => break,
             Event::Key(KeyEvent {
                 code: KeyCode::Esc,
+                kind: KeyEventKind::Press,
                 modifiers: KeyModifiers::NONE,
                 ..
             }) => match state {
@@ -248,6 +250,7 @@ fn main() -> crossterm::Result<()> {
             State::Results(_) => match event {
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('r'),
+                    kind: KeyEventKind::Press,
                     modifiers: KeyModifiers::NONE,
                     ..
                 }) => {
@@ -257,6 +260,7 @@ fn main() -> crossterm::Result<()> {
                 }
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('q'),
+                    kind: KeyEventKind::Press,
                     modifiers: KeyModifiers::NONE,
                     ..
                 }) => break,
