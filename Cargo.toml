@@ -14,4 +14,4 @@ crossterm = "0.26"
 clap = { version = "4.3", features = ["derive"] }
 miette = "5.9"
 ratatui = "0.21"
-unicode-segmentation = "1.10"
+finl_unicode = { version = "1.2", features = ["grapheme_clusters"] }
