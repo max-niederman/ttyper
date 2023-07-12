@@ -115,40 +115,53 @@ impl ThemedWidget for &Test {
                 }))
                 // current word
                 .chain({
-                    let progress_ind = self.words[self.current_word]
-                        .progress
-                        .len()
-                        .min(self.words[self.current_word].text.len());
+                    let text = &self.words[self.current_word].text;
+                    let prog = &self.words[self.current_word].progress;
+                    let text_count = text.chars().count();
+                    let prog_count = prog.chars().count();
 
-                    let correct = self.words[self.current_word]
-                        .text
-                        .starts_with(&self.words[self.current_word].progress[..]);
+                    // Find the index for the first incorrect character
+                    let mut incorrect_ind = 0;
+                    for (idx, chr) in prog.char_indices() {
+                        if !text.get(idx..).unwrap().starts_with(chr) {
+                            break;
+                        }
+                        incorrect_ind = idx + chr.len_utf8();
+                    }
 
-                    let (typed, untyped) =
-                        self.words[self.current_word]
-                            .text
-                            .split_at(ceil_char_boundary(
-                                &self.words[self.current_word].text,
-                                progress_ind,
-                            ));
-
-                    let mut remaining = untyped.chars().chain(iter::once(' '));
-                    let cursor = remaining.next().unwrap();
+                    let (cursor_ind, chr) = text.char_indices()
+                      .nth(prog_count.min(text_count))
+                      .unwrap_or((text.len(), '\0'));
+                    let untyped_ind = cursor_ind + chr.len_utf8();
 
                     iter::once(vec![
                         Span::styled(
-                            typed,
-                            if correct {
-                                theme.prompt_current_correct
-                            } else {
-                                theme.prompt_current_incorrect
-                            },
+                            text.get(..incorrect_ind).unwrap(),
+                            theme.prompt_current_correct,
                         ),
                         Span::styled(
-                            cursor.to_string(),
+                            text.get(incorrect_ind..cursor_ind).unwrap(),
+                            theme.prompt_current_incorrect,
+                        ),
+                        Span::styled(
+                            text.get(cursor_ind..untyped_ind).unwrap_or(""),
                             theme.prompt_current_untyped.patch(theme.prompt_cursor),
                         ),
-                        Span::styled(remaining.collect::<String>(), theme.prompt_current_untyped),
+                        Span::styled(
+                            text.get(untyped_ind..).unwrap_or(""),
+                            theme.prompt_current_untyped,
+                        ),
+                        Span::styled(
+                            " ", // Delimiting space
+                            if prog_count > text_count {
+                                // There are redundant letters at the end
+                                theme.prompt_current_incorrect.patch(theme.prompt_cursor)
+                            } else if prog_count == text_count {
+                                theme.prompt_current_untyped.patch(theme.prompt_cursor)
+                            } else {
+                                theme.prompt_current_untyped
+                            },
+                        ),
                     ])
                 })
                 // remaining words
