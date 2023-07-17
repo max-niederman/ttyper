@@ -1,50 +1,37 @@
-mod test;
+pub mod config;
+pub mod contents;
+pub mod opt;
 
-use std::{
-    num::{self, NonZeroUsize},
-    path::PathBuf,
-};
+use config::Config;
+use opt::Opt;
 
-use test::contents::Lexer;
-
-#[derive(Debug, clap::Parser)]
-struct Opt {
-    #[command(subcommand)]
-    command: Command,
-
-    #[clap(long)]
-    debug: bool,
-}
-
-#[derive(Debug, clap::Parser)]
-enum Command {
-    /// Reads test contents from a file.
-    File {
-        /// Path to the file.
-        path: PathBuf,
-
-        /// Language with which to lex the file.
-        #[clap(short, long, default_value = "extended-grapheme-clusters")]
-        lexer: Lexer,
-    },
-    /// Generates random words for test contents.
-    Words {
-        /// Number of words to generate.
-        count: num::NonZeroUsize,
-
-        /// Language to sample words from.
-        #[clap(short, long)]
-        language: Option<String>,
-
-        /// Take first N words from the language while sampling.
-        #[clap(short = 'c', long)]
-        language_cutoff: Option<NonZeroUsize>,
-    },
+#[derive(Debug)]
+pub struct Env {
+    pub config: Config,
+    pub opt: Opt,
 }
 
 fn main() {
     let opt = <Opt as clap::Parser>::parse();
     if opt.debug {
-        dbg!(opt);
+        dbg!(&opt);
+    }
+
+    let config = config::load(&opt);
+    if opt.debug {
+        dbg!(&config);
+    }
+
+    let env = Env { config, opt };
+
+    let mut contents = contents::generate(&env);
+
+    for line in &mut *contents {
+        println!("{}", line);
+    }
+    println!(":: restart ::");
+    contents.restart();
+    for line in &mut *contents {
+        println!("{}", line);
     }
 }
