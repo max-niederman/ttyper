@@ -3,6 +3,7 @@ pub mod results;
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::fmt;
 use std::time::Instant;
+use rand::seq::SliceRandom;
 
 pub struct TestEvent {
     pub time: Instant,
@@ -50,6 +51,18 @@ impl Test {
             current_word: 0,
             complete: false,
         }
+    }
+
+    pub fn from_missed_words(missed_words: &Vec<String>) -> Self {
+        // repeat each word 5 times
+        let mut missed_words: Vec<String> = missed_words
+            .into_iter()
+            .flat_map(|w| vec![w.clone(); 5])
+            .collect();
+
+        missed_words.shuffle(&mut rand::thread_rng());
+
+        Self::new(missed_words)
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) {

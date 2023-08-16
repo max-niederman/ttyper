@@ -209,7 +209,7 @@ impl ThemedWidget for &results::Results {
             .split(res_chunks[0]);
 
         let exit = Span::styled(
-            "Press 'q' to quit or 'r' for another test.",
+            "Press 'q' to quit or 'r' for another test or 'p' to practice missed words",
             theme.results_restart_prompt,
         );
         buf.set_span(chunks[1].x, chunks[1].y, &exit, chunks[1].width);
