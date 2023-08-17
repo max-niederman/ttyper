@@ -36,6 +36,12 @@ impl From<String> for TestWord {
     }
 }
 
+impl From<&str> for TestWord {
+    fn from(string: &str) -> Self {
+        Self::from(string.to_string())
+    }
+}
+
 #[derive(Debug)]
 pub struct Test {
     pub words: Vec<TestWord>,
