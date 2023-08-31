@@ -269,7 +269,13 @@ fn main() -> crossterm::Result<()> {
                     if result.missed_words.is_empty() {
                         continue;
                     }
-                    state = State::Test(Test::from_missed_words(&result.missed_words));
+                    // repeat each missed word 5 times
+                    let mut practice_words: Vec<String> = (result.missed_words)
+                        .iter()
+                        .flat_map(|w| vec![w.clone(); 5])
+                        .collect();
+                    practice_words.shuffle(&mut thread_rng());
+                    state = State::Test(Test::new(practice_words));
                 }
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('q'),

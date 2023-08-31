@@ -80,88 +80,83 @@ impl From<&Test> for Results {
             test.words.iter().flat_map(|w| w.events.iter()).collect();
 
         Self {
-            timing: Self::calc_timing(&events),
-            accuracy: Self::calc_accuracy(&events),
-            missed_words: Self::calc_missed_words(&test),
+            timing: calc_timing(&events),
+            accuracy: calc_accuracy(&events),
+            missed_words: calc_missed_words(&test),
         }
     }
-
 }
 
-impl Results {
-    fn calc_timing(events: &Vec<&super::TestEvent>) -> TimingData {
-        let mut timing = TimingData {
-            overall_cps: -1.0,
-            per_event: Vec::new(),
-            per_key: HashMap::new(),
-        };
+fn calc_timing(events: &[&super::TestEvent]) -> TimingData {
+    let mut timing = TimingData {
+        overall_cps: -1.0,
+        per_event: Vec::new(),
+        per_key: HashMap::new(),
+    };
 
-        // map of keys to a two-tuple (total time, clicks) for counting average
-        let mut keys: HashMap<KeyEvent, (f64, usize)> = HashMap::new();
+    // map of keys to a two-tuple (total time, clicks) for counting average
+    let mut keys: HashMap<KeyEvent, (f64, usize)> = HashMap::new();
 
-        for win in events.windows(2) {
-            let event_dur = win[1]
-                .time
-                .checked_duration_since(win[0].time)
-                .map(|d| d.as_secs_f64());
+    for win in events.windows(2) {
+        let event_dur = win[1]
+            .time
+            .checked_duration_since(win[0].time)
+            .map(|d| d.as_secs_f64());
 
-            if let Some(event_dur) = event_dur {
-                timing.per_event.push(event_dur);
+        if let Some(event_dur) = event_dur {
+            timing.per_event.push(event_dur);
 
-                let key = keys.entry(win[1].key).or_insert((0.0, 0));
-                key.0 += event_dur;
-                key.1 += 1;
-            }
+            let key = keys.entry(win[1].key).or_insert((0.0, 0));
+            key.0 += event_dur;
+            key.1 += 1;
         }
-
-        timing.per_key = keys
-            .into_iter()
-            .map(|(key, (total, count))| (key, total / count as f64))
-            .collect();
-
-        timing.overall_cps =
-            timing.per_event.len() as f64 / timing.per_event.iter().sum::<f64>();
-
-        timing
     }
 
-    fn calc_accuracy(events: &Vec<&super::TestEvent>) -> AccuracyData {
-        let mut acc = AccuracyData {
-            overall: Fraction::new(0, 0),
-            per_key: HashMap::new(),
-        };
+    timing.per_key = keys
+        .into_iter()
+        .map(|(key, (total, count))| (key, total / count as f64))
+        .collect();
 
-        events
-            .iter()
-            .filter(|event| event.correct.is_some())
-            .for_each(|event| {
-                let key = acc
-                    .per_key
-                    .entry(event.key)
-                    .or_insert_with(|| Fraction::new(0, 0));
+    timing.overall_cps = timing.per_event.len() as f64 / timing.per_event.iter().sum::<f64>();
 
-                acc.overall.denominator += 1;
-                key.denominator += 1;
+    timing
+}
 
-                if event.correct.unwrap() {
-                    acc.overall.numerator += 1;
-                    key.numerator += 1;
-                }
-            });
+fn calc_accuracy(events: &[&super::TestEvent]) -> AccuracyData {
+    let mut acc = AccuracyData {
+        overall: Fraction::new(0, 0),
+        per_key: HashMap::new(),
+    };
 
-        acc
-    }
+    events
+        .iter()
+        .filter(|event| event.correct.is_some())
+        .for_each(|event| {
+            let key = acc
+                .per_key
+                .entry(event.key)
+                .or_insert_with(|| Fraction::new(0, 0));
 
-    fn calc_missed_words(test: &Test) -> Vec<String> {
-        let is_missed_word_event = |event: &super::TestEvent| -> bool {
-            event.correct == Some(false) || event.correct.is_none()
-        };
+            acc.overall.denominator += 1;
+            key.denominator += 1;
 
+            if event.correct.unwrap() {
+                acc.overall.numerator += 1;
+                key.numerator += 1;
+            }
+        });
 
-        test.words
-            .iter()
-            .filter(|word| word.events.iter().any(is_missed_word_event))
-            .map(|word| word.text.clone())
-            .collect()
-    }
+    acc
+}
+
+fn calc_missed_words(test: &Test) -> Vec<String> {
+    let is_missed_word_event = |event: &super::TestEvent| -> bool {
+        event.correct == Some(false) || event.correct.is_none()
+    };
+
+    test.words
+        .iter()
+        .filter(|word| word.events.iter().any(is_missed_word_event))
+        .map(|word| word.text.clone())
+        .collect()
 }

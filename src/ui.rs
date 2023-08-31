@@ -208,10 +208,13 @@ impl ThemedWidget for &results::Results {
             .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
             .split(res_chunks[0]);
 
-        let exit = Span::styled(
-            "Press 'q' to quit or 'r' for another test or 'p' to practice missed words",
-            theme.results_restart_prompt,
-        );
+        let msg = if self.missed_words.is_empty() {
+            "Press 'q' to quit or 'r' for another test"
+        } else {
+            "Press 'q' to quit, 'r' for another test or 'p' to practice missed words"
+        };
+
+        let exit = Span::styled(msg, theme.results_restart_prompt);
         buf.set_span(chunks[1].x, chunks[1].y, &exit, chunks[1].width);
 
         // Sections
