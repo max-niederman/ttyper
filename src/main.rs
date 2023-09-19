@@ -249,7 +249,7 @@ fn main() -> crossterm::Result<()> {
                     }
                 }
             }
-            State::Results(_) => match event {
+            State::Results(ref result) => match event {
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('r'),
                     kind: KeyEventKind::Press,
@@ -259,6 +259,23 @@ fn main() -> crossterm::Result<()> {
                     state = State::Test(Test::new(opt.gen_contents().expect(
                             "Couldn't get test contents. Make sure the specified language actually exists.",
                         )));
+                }
+                Event::Key(KeyEvent {
+                    code: KeyCode::Char('p'),
+                    kind: KeyEventKind::Press,
+                    modifiers: KeyModifiers::NONE,
+                    ..
+                }) => {
+                    if result.missed_words.is_empty() {
+                        continue;
+                    }
+                    // repeat each missed word 5 times
+                    let mut practice_words: Vec<String> = (result.missed_words)
+                        .iter()
+                        .flat_map(|w| vec![w.clone(); 5])
+                        .collect();
+                    practice_words.shuffle(&mut thread_rng());
+                    state = State::Test(Test::new(practice_words));
                 }
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('q'),
