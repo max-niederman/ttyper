@@ -12,7 +12,6 @@ edition = "2018"
 [dependencies]
 crossterm = "0.26"
 clap = { version = "4.3", features = ["derive"] }
-miette = "5.9"
 ratatui = "0.21"
 unicode-segmentation = "1.10"
 rand = "0.8.5"

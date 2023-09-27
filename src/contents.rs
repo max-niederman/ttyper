@@ -12,7 +12,7 @@ use unicode_segmentation::GraphemeCursor;
 
 use crate::opt::{Command, FileLexer};
 
-/// A trait for types that can be used as test contents.
+/// A trait for types that can be used as trial contents.
 ///
 /// The iterator should yield "atoms," the smallest chunks
 /// of the test that should not be split across line breaks.

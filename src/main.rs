@@ -1,6 +1,7 @@
-pub mod config;
-pub mod contents;
-pub mod opt;
+mod config;
+mod contents;
+mod opt;
+mod trial;
 
 use config::Config;
 use opt::Opt;
