@@ -596,6 +596,7 @@ dependencies = [
  "crossterm",
  "dirs",
  "rand",
+ "rand_chacha",
  "ratatui",
  "serde",
  "toml",
