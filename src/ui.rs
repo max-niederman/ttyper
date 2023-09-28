@@ -341,12 +341,3 @@ impl ThemedWidget for &results::Results {
         wpm_chart.render(res_chunks[1], buf);
     }
 }
-
-// FIXME: replace with `str::ceil_char_boundary` when stable
-fn ceil_char_boundary(string: &str, index: usize) -> usize {
-    if string.is_char_boundary(index) {
-        index
-    } else {
-        ceil_char_boundary(string, index + 1)
-    }
-}
