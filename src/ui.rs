@@ -104,65 +104,95 @@ impl ThemedWidget for &Test {
             let words = iter::empty::<Vec<Span>>()
                 // already typed words
                 .chain(self.words[..self.current_word].iter().map(|w| {
-                    vec![Span::styled(
-                        w.text.clone() + " ",
-                        if w.progress == w.text {
-                            theme.prompt_correct
+                    let text = &mut w.text.chars();
+                    let prog = &mut w.progress.chars();
+                    let mut display = vec![];
+                    'checking: loop {
+                        if let Some(t) = text.next() {
+                            if let Some(p) = prog.next() {
+                                display.push(
+                                    Span::styled(
+                                        t.to_string(),
+                                        if t == p {
+                                            theme.prompt_correct
+                                        } else {
+                                            theme.prompt_incorrect
+                                        }
+                                    ),
+                                );
+                            } else {
+                                display.push(
+                                    Span::styled(t.to_string(), theme.prompt_untyped),
+                                );
+                            }
                         } else {
-                            theme.prompt_incorrect
-                        },
-                    )]
+                            if let Some(p) = prog.next() {
+                                display.push(
+                                    Span::styled(p.to_string(), theme.prompt_incorrect),
+                                );
+                            } else {
+                                display.push(
+                                    Span::styled(" ", theme.prompt_untyped),
+                                );
+                                break 'checking;
+                            }
+                        }
+                    }
+                    display
                 }))
                 // current word
                 .chain({
-                    let text = &self.words[self.current_word].text;
-                    let prog = &self.words[self.current_word].progress;
-                    let text_count = text.chars().count();
-                    let prog_count = prog.chars().count();
-
-                    // Find the index for the first incorrect character
-                    let mut incorrect_ind = 0;
-                    for (idx, chr) in prog.char_indices() {
-                        if !text.get(idx..).unwrap().starts_with(chr) {
-                            break;
-                        }
-                        incorrect_ind = idx + chr.len_utf8();
-                    }
-
-                    let (cursor_ind, chr) = text.char_indices()
-                      .nth(prog_count.min(text_count))
-                      .unwrap_or((text.len(), '\0'));
-                    let untyped_ind = cursor_ind + chr.len_utf8();
-
-                    iter::once(vec![
-                        Span::styled(
-                            text.get(..incorrect_ind).unwrap(),
-                            theme.prompt_current_correct,
-                        ),
-                        Span::styled(
-                            text.get(incorrect_ind..cursor_ind).unwrap(),
-                            theme.prompt_current_incorrect,
-                        ),
-                        Span::styled(
-                            text.get(cursor_ind..untyped_ind).unwrap_or(""),
-                            theme.prompt_current_untyped.patch(theme.prompt_cursor),
-                        ),
-                        Span::styled(
-                            text.get(untyped_ind..).unwrap_or(""),
-                            theme.prompt_current_untyped,
-                        ),
-                        Span::styled(
-                            " ", // Delimiting space
-                            if prog_count > text_count {
-                                // There are redundant letters at the end
-                                theme.prompt_current_incorrect.patch(theme.prompt_cursor)
-                            } else if prog_count == text_count {
-                                theme.prompt_current_untyped.patch(theme.prompt_cursor)
+                    let text = &mut self.words[self.current_word].text.chars();
+                    let prog = &mut self.words[self.current_word].progress.chars();
+                    let mut display = vec![];
+                    let mut cursor_showed = false;
+                    'checking: loop {
+                        if let Some(t) = text.next() {
+                            if let Some(p) = prog.next() {
+                                display.push(
+                                    Span::styled(
+                                        t.to_string(),
+                                        if t == p {
+                                            theme.prompt_current_correct
+                                        } else {
+                                            theme.prompt_current_incorrect
+                                        }
+                                    ),
+                                );
                             } else {
-                                theme.prompt_current_untyped
-                            },
-                        ),
-                    ])
+                                display.push(
+                                    Span::styled(
+                                        t.to_string(),
+                                        if cursor_showed {
+                                            theme.prompt_current_untyped
+                                        } else {
+                                            cursor_showed = true;
+                                            theme.prompt_current_untyped.patch(theme.prompt_cursor)
+                                        }
+                                    ),
+                                );
+                            }
+                        } else {
+                            if let Some(p) = prog.next() {
+                                display.push(
+                                    Span::styled(p.to_string(), theme.prompt_current_incorrect),
+                                );
+                            } else {
+                                display.push(
+                                    Span::styled(
+                                        " ",
+                                        if cursor_showed {
+                                            theme.prompt_current_untyped
+                                        } else {
+                                            theme.prompt_current_untyped.patch(theme.prompt_cursor)
+                                        }
+                                    ),
+                                );
+                                break 'checking;
+                            }
+                        }
+                    };
+                    iter::once(display)
                 })
                 // remaining words
                 .chain(
