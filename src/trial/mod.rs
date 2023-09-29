@@ -8,7 +8,7 @@ pub struct Trial {
     history: History,
 
     /// The current grapheme cluster being typed.
-    /// Once the cluster is finished, it is pushed to `evaluation`.
+    /// Once the cluster is finished, it is pushed to `history`.
     working_grapheme_cluster: String,
 }
 

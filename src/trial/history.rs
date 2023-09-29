@@ -1,4 +1,4 @@
-use std::{collections::btree_map::Entry, convert::TryFrom, iter, ops::Range};
+use std::{convert::TryFrom, iter};
 
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -32,27 +32,6 @@ pub struct History {
     /// Note that the first p rows have entries outside the matrix,
     /// which are set to [`NWEntry::Invalid`].
     nw_entries: Vec<u32>,
-}
-
-/// An "action" in the Needleman-Wunsch algorithm.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum NWAction {
-    /// The typed and reference grapheme clusters match.
-    Match,
-
-    /// The typed and reference grapheme clusters do not match.
-    Mismatch,
-
-    /// The typed grapheme cluster was inserted.
-    /// I.e., the reference grapheme cluster was deleted.
-    Insertion,
-
-    /// The typed grapheme cluster was deleted.
-    /// I.e., the reference grapheme cluster was inserted.
-    Deletion,
-
-    /// The entry is invalid, because it is outside the matrix.
-    Invalid,
 }
 
 impl History {
@@ -283,7 +262,7 @@ mod tests {
     }
 
     #[test]
-    fn replicates_needleman_wunsch_with_high_max_misalignment() {
+    fn reproduces_needleman_wunsch_with_high_max_misalignment() {
         const NW_MAT: [[u32; 9]; 7] = [
             [0, 1, 2, 3, 4, 5, 6, 7, 8],
             [1, 0, 1, 2, 3, 4, 5, 6, 7],
