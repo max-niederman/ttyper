@@ -22,10 +22,10 @@ match
 ->
 Option
 Result
-Some(T)
+Some
 None
-Ok(T)
-Err(E)
+Ok
+Err
 mod
 move
 mut
@@ -47,8 +47,8 @@ use
 where
 while
 panic!()
-println!("{}", T)
-(T, E)
+println!
+dbg!
 u8
 u16
 u32
@@ -63,29 +63,36 @@ i128
 isize
 bool
 char
-str
 &str
 Vec::new()
-Vec<T>
+Vec<_>
 vec![]
 HashMap
 String
-String::from("monkeytype")
-collect::<Vec<i32>>()
+Vec::new()
+collect::<Vec<_>>()
+::<>
 box
 lazy_static
 iter()
 filter(|x| x.is_ok())
-<'a>
+<'_>
 map
 BTreeMap
 VecDeque
 LinkedList
 HashSet
 &'static
+&'_
+..
 ..=
 ?
 macro_rules!
 {:?}
 format!
 unwrap()
+#[derive(Debug, Clone)]
+#[test]
+///
+//!
+//
