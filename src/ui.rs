@@ -307,6 +307,9 @@ impl ThemedWidget for &results::Results {
             .style(theme.results_chart)
             .data(&wpm_sma)];
 
+        let y_label_min = wpm_sma_min as u16;
+        let y_label_max = (wpm_sma_max as u16).max(y_label_min + 6);
+
         let wpm_chart = Chart::new(wpm_datasets)
             .block(Block::default().title(vec![Span::styled("Chart", theme.title)]))
             .x_axis(
@@ -322,7 +325,7 @@ impl ThemedWidget for &results::Results {
                     ))
                     .bounds([wpm_sma_min, wpm_sma_max])
                     .labels(
-                        (wpm_sma_min as u16..wpm_sma_max as u16)
+                        (y_label_min..y_label_max)
                             .step_by(5)
                             .map(|n| Span::raw(format!("{}", n)))
                             .collect(),
