@@ -41,14 +41,16 @@ pub struct Test {
     pub words: Vec<TestWord>,
     pub current_word: usize,
     pub complete: bool,
+    pub backtracking_enabled: bool,
 }
 
 impl Test {
-    pub fn new(words: Vec<String>) -> Self {
+    pub fn new(words: Vec<String>, backtracking_enabled: bool) -> Self {
         Self {
             words: words.into_iter().map(TestWord::from).collect(),
             current_word: 0,
             complete: false,
+            backtracking_enabled,
         }
     }
 
@@ -77,7 +79,7 @@ impl Test {
                 }
             }
             KeyCode::Backspace => {
-                if word.progress.is_empty() {
+                if word.progress.is_empty() && self.backtracking_enabled {
                     self.last_word();
                 } else {
                     word.events.push(TestEvent {

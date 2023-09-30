@@ -55,6 +55,10 @@ struct Opt {
     /// List installed languages
     #[structopt(long)]
     list_languages: bool,
+
+    /// Enable no backtrack between words
+    #[structopt(long)]
+    no_backtrack: bool,
 }
 
 impl Opt {
@@ -215,9 +219,12 @@ fn main() -> crossterm::Result<()> {
     )?;
     terminal.clear()?;
 
-    let mut state = State::Test(Test::new(opt.gen_contents().expect(
-        "Couldn't get test contents. Make sure the specified language actually exists.",
-    )));
+    let mut state = State::Test(Test::new(
+        opt.gen_contents().expect(
+            "Couldn't get test contents. Make sure the specified language actually exists.",
+        ),
+        !opt.no_backtrack,
+    ));
 
     state.render_into(&mut terminal, &config)?;
     loop {
@@ -261,9 +268,12 @@ fn main() -> crossterm::Result<()> {
                     modifiers: KeyModifiers::NONE,
                     ..
                 }) => {
-                    state = State::Test(Test::new(opt.gen_contents().expect(
+                    state = State::Test(Test::new(
+                        opt.gen_contents().expect(
                             "Couldn't get test contents. Make sure the specified language actually exists.",
-                        )));
+                        ),
+                        !opt.no_backtrack
+                    ));
                 }
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('p'),
@@ -280,7 +290,7 @@ fn main() -> crossterm::Result<()> {
                         .flat_map(|w| vec![w.clone(); 5])
                         .collect();
                     practice_words.shuffle(&mut thread_rng());
-                    state = State::Test(Test::new(practice_words));
+                    state = State::Test(Test::new(practice_words, !opt.no_backtrack));
                 }
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('q'),
