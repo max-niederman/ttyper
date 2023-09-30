@@ -291,7 +291,8 @@ impl ThemedWidget for &results::Results {
             })
             .collect();
 
-        if !wpm_sma.is_empty() { // In case there's a chart to render
+        // Render the chart if possible
+        if !wpm_sma.is_empty() {
             let wpm_sma_min = wpm_sma
                 .iter()
                 .map(|(_, x)| x)
