@@ -33,17 +33,17 @@ scoop install ttyper
 For usage instructions, you can run `ttyper --help`:
 
 ```
-ttyper 1.1.0
+ttyper 1.3.0
 Terminal-based typing test.
 
 USAGE:
     ttyper [FLAGS] [OPTIONS] [contents]
 
 FLAGS:
-        --no-backtrack      Enable no backtrack between words
     -d, --debug             
     -h, --help              Prints help information
         --list-languages    List installed languages
+        --no-backtrack      Disable backtracking to completed words
     -V, --version           Prints version information
 
 OPTIONS:

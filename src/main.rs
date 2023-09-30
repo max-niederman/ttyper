@@ -56,7 +56,7 @@ struct Opt {
     #[structopt(long)]
     list_languages: bool,
 
-    /// Enable no backtrack between words
+    /// Disable backtracking to completed words
     #[structopt(long)]
     no_backtrack: bool,
 }
