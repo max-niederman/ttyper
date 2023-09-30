@@ -291,44 +291,50 @@ impl ThemedWidget for &results::Results {
             })
             .collect();
 
-        let wpm_sma_min = wpm_sma
-            .iter()
-            .map(|(_, x)| x)
-            .fold(f64::INFINITY, |a, &b| a.min(b));
-        let wpm_sma_max = wpm_sma
-            .iter()
-            .map(|(_, x)| x)
-            .fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+        // Render the chart if possible
+        if !wpm_sma.is_empty() {
+            let wpm_sma_min = wpm_sma
+                .iter()
+                .map(|(_, x)| x)
+                .fold(f64::INFINITY, |a, &b| a.min(b));
+            let wpm_sma_max = wpm_sma
+                .iter()
+                .map(|(_, x)| x)
+                .fold(f64::NEG_INFINITY, |a, &b| a.max(b));
 
-        let wpm_datasets = vec![Dataset::default()
-            .name("WPM")
-            .marker(Marker::Braille)
-            .graph_type(GraphType::Line)
-            .style(theme.results_chart)
-            .data(&wpm_sma)];
+            let wpm_datasets = vec![Dataset::default()
+                .name("WPM")
+                .marker(Marker::Braille)
+                .graph_type(GraphType::Line)
+                .style(theme.results_chart)
+                .data(&wpm_sma)];
 
-        let wpm_chart = Chart::new(wpm_datasets)
-            .block(Block::default().title(vec![Span::styled("Chart", theme.title)]))
-            .x_axis(
-                Axis::default()
-                    .title(Span::styled("Keypresses", theme.results_chart_x))
-                    .bounds([0.0, self.timing.per_event.len() as f64]),
-            )
-            .y_axis(
-                Axis::default()
-                    .title(Span::styled(
-                        "WPM (10-keypress rolling average)",
-                        theme.results_chart_y,
-                    ))
-                    .bounds([wpm_sma_min, wpm_sma_max])
-                    .labels(
-                        (wpm_sma_min as u16..wpm_sma_max as u16)
-                            .step_by(5)
-                            .map(|n| Span::raw(format!("{}", n)))
-                            .collect(),
-                    ),
-            );
-        wpm_chart.render(res_chunks[1], buf);
+            let y_label_min = wpm_sma_min as u16;
+            let y_label_max = (wpm_sma_max as u16).max(y_label_min + 6);
+
+            let wpm_chart = Chart::new(wpm_datasets)
+                .block(Block::default().title(vec![Span::styled("Chart", theme.title)]))
+                .x_axis(
+                    Axis::default()
+                        .title(Span::styled("Keypresses", theme.results_chart_x))
+                        .bounds([0.0, self.timing.per_event.len() as f64]),
+                )
+                .y_axis(
+                    Axis::default()
+                        .title(Span::styled(
+                            "WPM (10-keypress rolling average)",
+                            theme.results_chart_y,
+                        ))
+                        .bounds([wpm_sma_min, wpm_sma_max])
+                        .labels(
+                            (y_label_min..y_label_max)
+                                .step_by(5)
+                                .map(|n| Span::raw(format!("{}", n)))
+                                .collect(),
+                        ),
+                );
+            wpm_chart.render(res_chunks[1], buf);
+        }
     }
 }
 
