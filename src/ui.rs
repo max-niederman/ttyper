@@ -12,7 +12,6 @@ use ratatui::{
     widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType, Paragraph, Widget},
 };
 use results::Fraction;
-use std::iter;
 
 // Convert CPS to WPM (clicks per second)
 const WPM_PER_CPS: f64 = 12.0;
@@ -134,8 +133,6 @@ impl ThemedWidget for &Test {
     }
 }
 
-
-
 fn words_to_spans<'a>(
     words: &'a [TestWord],
     current_word: usize,
@@ -169,6 +166,7 @@ enum Status {
     Untyped,
     Overtyped,
 }
+
 fn split_current_word(word: &TestWord) -> Vec<(String, Status)> {
     let mut parts = Vec::new();
     let mut cur_string = String::new();
@@ -250,9 +248,7 @@ fn split_typed_word(word: &TestWord) -> Vec<(String, Status)> {
     parts
 }
 
-
-
-fn word_parts_to_spans<'a>(parts: Vec<(String, Status)>, theme: &'a Theme) -> Vec<Span<'a>> {
+fn word_parts_to_spans(parts: Vec<(String, Status)>, theme: &Theme) -> Vec<Span<'_>> {
     let mut spans = Vec::new();
     for (text, status) in parts {
         let style = match status {
@@ -421,17 +417,8 @@ impl ThemedWidget for &results::Results {
     }
 }
 
-// FIXME: replace with `str::ceil_char_boundary` when stable
-fn ceil_char_boundary(string: &str, index: usize) -> usize {
-    if string.is_char_boundary(index) {
-        index
-    } else {
-        ceil_char_boundary(string, index + 1)
-    }
-}
-
 #[cfg(test)]
-mod test_ui {
+mod tests {
     use super::*;
 
     mod split_words {
@@ -451,7 +438,7 @@ mod test_ui {
             let expected = test_case
                 .expected
                 .iter()
-                .map(|(s, v)| (s.to_string(), v.clone()))
+                .map(|(s, v)| (s.to_string(), *v))
                 .collect::<Vec<_>>();
 
             (word, expected)
