@@ -1,6 +1,6 @@
 use crate::config::Theme;
 
-use super::test::{results, Test};
+use super::test::{results, Test, TestWord};
 
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
@@ -12,7 +12,6 @@ use ratatui::{
     widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType, Paragraph, Widget},
 };
 use results::Fraction;
-use std::iter;
 
 // Convert CPS to WPM (clicks per second)
 const WPM_PER_CPS: f64 = 12.0;
@@ -101,62 +100,7 @@ impl ThemedWidget for &Test {
         input.render(buf);
 
         let target_lines: Vec<Line> = {
-            let words = iter::empty::<Vec<Span>>()
-                // already typed words
-                .chain(self.words[..self.current_word].iter().map(|w| {
-                    vec![Span::styled(
-                        w.text.clone() + " ",
-                        if w.progress == w.text {
-                            theme.prompt_correct
-                        } else {
-                            theme.prompt_incorrect
-                        },
-                    )]
-                }))
-                // current word
-                .chain({
-                    let progress_ind = self.words[self.current_word]
-                        .progress
-                        .len()
-                        .min(self.words[self.current_word].text.len());
-
-                    let correct = self.words[self.current_word]
-                        .text
-                        .starts_with(&self.words[self.current_word].progress[..]);
-
-                    let (typed, untyped) =
-                        self.words[self.current_word]
-                            .text
-                            .split_at(ceil_char_boundary(
-                                &self.words[self.current_word].text,
-                                progress_ind,
-                            ));
-
-                    let mut remaining = untyped.chars().chain(iter::once(' '));
-                    let cursor = remaining.next().unwrap();
-
-                    iter::once(vec![
-                        Span::styled(
-                            typed,
-                            if correct {
-                                theme.prompt_current_correct
-                            } else {
-                                theme.prompt_current_incorrect
-                            },
-                        ),
-                        Span::styled(
-                            cursor.to_string(),
-                            theme.prompt_current_untyped.patch(theme.prompt_cursor),
-                        ),
-                        Span::styled(remaining.collect::<String>(), theme.prompt_current_untyped),
-                    ])
-                })
-                // remaining words
-                .chain(
-                    self.words[self.current_word + 1..]
-                        .iter()
-                        .map(|w| vec![Span::styled(w.text.clone() + " ", theme.prompt_untyped)]),
-                );
+            let words = words_to_spans(&self.words, self.current_word, theme);
 
             let mut lines: Vec<Line> = Vec::new();
             let mut current_line: Vec<Span> = Vec::new();
@@ -187,6 +131,141 @@ impl ThemedWidget for &Test {
         );
         target.render(chunks[1], buf);
     }
+}
+
+fn words_to_spans<'a>(
+    words: &'a [TestWord],
+    current_word: usize,
+    theme: &'a Theme,
+) -> Vec<Vec<Span<'a>>> {
+    let mut spans = Vec::new();
+
+    for word in &words[..current_word] {
+        let parts = split_typed_word(word);
+        spans.push(word_parts_to_spans(parts, theme));
+    }
+
+    let parts_current = split_current_word(&words[current_word]);
+    spans.push(word_parts_to_spans(parts_current, theme));
+
+    for word in &words[current_word + 1..] {
+        let parts = vec![(word.text.clone(), Status::Untyped)];
+        spans.push(word_parts_to_spans(parts, theme));
+    }
+    spans
+}
+
+#[derive(PartialEq, Clone, Copy, Debug)]
+enum Status {
+    Correct,
+    Incorrect,
+    CurrentUntyped,
+    CurrentCorrect,
+    CurrentIncorrect,
+    Cursor,
+    Untyped,
+    Overtyped,
+}
+
+fn split_current_word(word: &TestWord) -> Vec<(String, Status)> {
+    let mut parts = Vec::new();
+    let mut cur_string = String::new();
+    let mut cur_status = Status::Untyped;
+
+    let mut progress = word.progress.chars();
+    for tc in word.text.chars() {
+        let p = progress.next();
+        let status = match p {
+            None => Status::CurrentUntyped,
+            Some(c) => match c {
+                c if c == tc => Status::CurrentCorrect,
+                _ => Status::CurrentIncorrect,
+            },
+        };
+
+        if status == cur_status {
+            cur_string.push(tc);
+        } else {
+            if !cur_string.is_empty() {
+                parts.push((cur_string, cur_status));
+                cur_string = String::new();
+            }
+            cur_string.push(tc);
+            cur_status = status;
+
+            // first currentuntyped is cursor
+            if status == Status::CurrentUntyped {
+                parts.push((cur_string, Status::Cursor));
+                cur_string = String::new();
+            }
+        }
+    }
+    if !cur_string.is_empty() {
+        parts.push((cur_string, cur_status));
+    }
+    let overtyped = progress.collect::<String>();
+    if !overtyped.is_empty() {
+        parts.push((overtyped, Status::Overtyped));
+    }
+    parts
+}
+
+fn split_typed_word(word: &TestWord) -> Vec<(String, Status)> {
+    let mut parts = Vec::new();
+    let mut cur_string = String::new();
+    let mut cur_status = Status::Untyped;
+
+    let mut progress = word.progress.chars();
+    for tc in word.text.chars() {
+        let p = progress.next();
+        let status = match p {
+            None => Status::Untyped,
+            Some(c) => match c {
+                c if c == tc => Status::Correct,
+                _ => Status::Incorrect,
+            },
+        };
+
+        if status == cur_status {
+            cur_string.push(tc);
+        } else {
+            if !cur_string.is_empty() {
+                parts.push((cur_string, cur_status));
+                cur_string = String::new();
+            }
+            cur_string.push(tc);
+            cur_status = status;
+        }
+    }
+    if !cur_string.is_empty() {
+        parts.push((cur_string, cur_status));
+    }
+
+    let overtyped = progress.collect::<String>();
+    if !overtyped.is_empty() {
+        parts.push((overtyped, Status::Overtyped));
+    }
+    parts
+}
+
+fn word_parts_to_spans(parts: Vec<(String, Status)>, theme: &Theme) -> Vec<Span<'_>> {
+    let mut spans = Vec::new();
+    for (text, status) in parts {
+        let style = match status {
+            Status::Correct => theme.prompt_correct,
+            Status::Incorrect => theme.prompt_incorrect,
+            Status::Untyped => theme.prompt_untyped,
+            Status::CurrentUntyped => theme.prompt_current_untyped,
+            Status::CurrentCorrect => theme.prompt_current_correct,
+            Status::CurrentIncorrect => theme.prompt_current_incorrect,
+            Status::Cursor => theme.prompt_current_untyped.patch(theme.prompt_cursor),
+            Status::Overtyped => theme.prompt_incorrect,
+        };
+
+        spans.push(Span::styled(text, style));
+    }
+    spans.push(Span::styled(" ", theme.prompt_untyped));
+    spans
 }
 
 impl ThemedWidget for &results::Results {
@@ -338,11 +417,95 @@ impl ThemedWidget for &results::Results {
     }
 }
 
-// FIXME: replace with `str::ceil_char_boundary` when stable
-fn ceil_char_boundary(string: &str, index: usize) -> usize {
-    if string.is_char_boundary(index) {
-        index
-    } else {
-        ceil_char_boundary(string, index + 1)
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod split_words {
+        use super::Status::*;
+        use super::*;
+
+        struct TestCase {
+            word: &'static str,
+            progress: &'static str,
+            expected: Vec<(&'static str, Status)>,
+        }
+
+        fn setup(test_case: TestCase) -> (TestWord, Vec<(String, Status)>) {
+            let mut word = TestWord::from(test_case.word);
+            word.progress = test_case.progress.to_string();
+
+            let expected = test_case
+                .expected
+                .iter()
+                .map(|(s, v)| (s.to_string(), *v))
+                .collect::<Vec<_>>();
+
+            (word, expected)
+        }
+
+        #[test]
+        fn typed_words_split() {
+            let cases = vec![
+                TestCase {
+                    word: "monkeytype",
+                    progress: "monkeytype",
+                    expected: vec![("monkeytype", Correct)],
+                },
+                TestCase {
+                    word: "monkeytype",
+                    progress: "monkeXtype",
+                    expected: vec![("monke", Correct), ("y", Incorrect), ("type", Correct)],
+                },
+                TestCase {
+                    word: "monkeytype",
+                    progress: "monkeas",
+                    expected: vec![("monke", Correct), ("yt", Incorrect), ("ype", Untyped)],
+                },
+            ];
+
+            for case in cases {
+                let (word, expected) = setup(case);
+                let got = split_typed_word(&word);
+                assert_eq!(got, expected);
+            }
+        }
+
+        #[test]
+        fn current_word_split() {
+            let cases = vec![
+                TestCase {
+                    word: "monkeytype",
+                    progress: "monkeytype",
+                    expected: vec![("monkeytype", CurrentCorrect)],
+                },
+                TestCase {
+                    word: "monkeytype",
+                    progress: "monke",
+                    expected: vec![
+                        ("monke", CurrentCorrect),
+                        ("y", Cursor),
+                        ("type", CurrentUntyped),
+                    ],
+                },
+                TestCase {
+                    word: "monkeytype",
+                    progress: "monkeXt",
+                    expected: vec![
+                        ("monke", CurrentCorrect),
+                        ("y", CurrentIncorrect),
+                        ("t", CurrentCorrect),
+                        ("y", Cursor),
+                        ("pe", CurrentUntyped),
+                    ],
+                },
+            ];
+
+            for case in cases {
+                let (word, expected) = setup(case);
+                let got = split_current_word(&word);
+                assert_eq!(got, expected);
+            }
+        }
     }
 }
