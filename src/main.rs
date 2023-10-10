@@ -69,13 +69,13 @@ impl Opt {
                     std::io::stdin()
                         .lock()
                         .lines()
-                        .filter_map(Result::ok)
+                        .map_while(Result::ok)
                         .collect()
                 } else {
                     let file = fs::File::open(path).expect("Error reading language file.");
                     io::BufReader::new(file)
                         .lines()
-                        .filter_map(Result::ok)
+                        .map_while(Result::ok)
                         .collect()
                 };
 
@@ -134,13 +134,22 @@ impl Opt {
     }
 
     /// Installed languages under config directory
-    fn languages(&self) -> io::Result<Vec<OsString>> {
-        Ok(self
+    fn languages(&self) -> io::Result<impl Iterator<Item = OsString>> {
+        let builtin = Resources::iter().filter_map(|name| {
+            name.strip_prefix("language/")
+                .map(ToOwned::to_owned)
+                .map(OsString::from)
+        });
+
+        let configured = self
             .language_dir()
-            .read_dir()?
-            .filter_map(Result::ok)
-            .map(|e| e.file_name())
-            .collect())
+            .read_dir()
+            .into_iter()
+            .flatten()
+            .map_while(Result::ok)
+            .map(|e| e.file_name());
+
+        Ok(builtin.chain(configured))
     }
 
     /// Config directory
@@ -195,15 +204,10 @@ fn main() -> crossterm::Result<()> {
     }
 
     if opt.list_languages {
-        match opt.languages() {
-            Ok(languages) => languages,
-            Err(_) => {
-                println!("Warning: Couldn't get installed languages under config directory. Make sure the config directory exists.");
-                vec![]
-            }
-        }
-            .iter()
+        opt.languages()
+            .unwrap()
             .for_each(|name| println!("{}", name.to_str().expect("Ill-formatted language name.")));
+
         return Ok(());
     }
 

@@ -82,7 +82,7 @@ impl From<&Test> for Results {
         Self {
             timing: calc_timing(&events),
             accuracy: calc_accuracy(&events),
-            missed_words: calc_missed_words(&test),
+            missed_words: calc_missed_words(test),
         }
     }
 }
