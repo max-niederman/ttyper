@@ -13,7 +13,7 @@ where
     duration.serialize(serializer)
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct TestEvent {
     #[serde(
         serialize_with = "serialize_instant",
@@ -33,7 +33,7 @@ impl fmt::Debug for TestEvent {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct TestWord {
     pub text: String,
     pub progress: String,
