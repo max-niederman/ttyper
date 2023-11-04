@@ -6,7 +6,7 @@
 [![GitHub issues](https://img.shields.io/github/issues/max-niederman/ttyper)](https://github.com/max-niederman/ttype/github/actions/workflow/status/:user/:repo/:workflow+r/issues)
 [![License](https://img.shields.io/crates/l/ttyper)](./LICENSE.md)
 
-Ttyper is a terminal-based typing test built with Rust and tui-rs.
+ttyper is a terminal-based typing test built with Rust and tui-rs.
 
 ![Recording](./resources/recording.gif)
 
