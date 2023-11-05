@@ -1,0 +1,19 @@
+{
+  "name": "ttyper",
+  "version": "0.0.0-alpha2",
+  "description": "ttyper is a terminal-based typing test built with Rust and tui-rs.",
+  "repository": "https://github.com/max-niederman/ttyper",
+  "license": "MIT",
+  "bin": {
+    "ttyper": "runner.js"
+  },
+  "type": "module",
+  "scripts": {
+    "install": "node install.js"
+  },
+  "binDir": "bin",
+  "dependencies": {
+    "adm-zip": "^0.5.10",
+    "tar": "^6.1.15"
+  }
+}
