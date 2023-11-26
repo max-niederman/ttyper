@@ -3,8 +3,8 @@ mod test;
 mod ui;
 
 use config::Config;
-use test::{results::Results, Test};
 use std::ops::Drop;
+use test::{results::Results, Test};
 
 use crossterm::{
     self, cursor,
@@ -218,7 +218,8 @@ impl Drop for State {
             cursor::RestorePosition,
             cursor::Show,
             terminal::LeaveAlternateScreen,
-        ).map_err(|err| {
+        )
+        .map_err(|err| {
             eprintln!("Couldn't restore default terminal settings: {err}");
         });
     }
