@@ -98,6 +98,10 @@ impl Opt {
                             .map(|f| f.data.into_owned())
                     })?;
 
+                if bytes.is_empty() {
+                    panic!("Language file had not content.");
+                }
+
                 let mut rng = thread_rng();
 
                 let mut language: Vec<&str> = str::from_utf8(&bytes)
