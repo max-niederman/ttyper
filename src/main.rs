@@ -4,6 +4,7 @@ mod ui;
 
 use config::Config;
 use test::{results::Results, Test};
+use std::ops::Drop;
 
 use crossterm::{
     self, cursor,
@@ -175,6 +176,17 @@ enum State {
 }
 
 impl State {
+    fn set_modes(&self) -> crossterm::Result<()> {
+        terminal::enable_raw_mode()?;
+        execute!(
+            io::stdout(),
+            cursor::Hide,
+            cursor::SavePosition,
+            terminal::EnterAlternateScreen,
+        )?;
+        Ok(())
+    }
+
     fn render_into<B: ratatui::backend::Backend>(
         &self,
         terminal: &mut Terminal<B>,
@@ -193,6 +205,22 @@ impl State {
             }
         }
         Ok(())
+    }
+}
+
+impl Drop for State {
+    fn drop(&mut self) {
+        let _ = terminal::disable_raw_mode().map_err(|err| {
+            eprintln!("Couldn't disable raw mode: {err}");
+        });
+        let _ = execute!(
+            io::stdout(),
+            cursor::RestorePosition,
+            cursor::Show,
+            terminal::LeaveAlternateScreen,
+        ).map_err(|err| {
+            eprintln!("Couldn't restore default terminal settings: {err}");
+        });
     }
 }
 
@@ -218,13 +246,6 @@ fn main() -> crossterm::Result<()> {
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
 
-    terminal::enable_raw_mode()?;
-    execute!(
-        io::stdout(),
-        cursor::Hide,
-        cursor::SavePosition,
-        terminal::EnterAlternateScreen,
-    )?;
     terminal.clear()?;
 
     let mut state = State::Test(Test::new(
@@ -233,6 +254,7 @@ fn main() -> crossterm::Result<()> {
         ),
         !opt.no_backtrack,
     ));
+    state.set_modes()?;
 
     state.render_into(&mut terminal, &config)?;
     loop {
@@ -312,14 +334,6 @@ fn main() -> crossterm::Result<()> {
 
         state.render_into(&mut terminal, &config)?;
     }
-
-    terminal::disable_raw_mode()?;
-    execute!(
-        io::stdout(),
-        cursor::RestorePosition,
-        cursor::Show,
-        terminal::LeaveAlternateScreen,
-    )?;
 
     Ok(())
 }
