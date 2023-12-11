@@ -334,18 +334,19 @@ impl ThemedWidget for &results::Results {
         worst_text.extend(
             worst_keys
                 .iter()
-                .take(5)
                 .filter_map(|(key, acc)| {
                     if let KeyCode::Char(character) = key.code {
-                        Some(format!(
-                            "- {} at {:.1}% accuracy",
-                            character,
-                            f64::from(**acc) * 100.0,
-                        ))
+                        let key_accuracy = f64::from(**acc) * 100.0;
+                        if key_accuracy != 100.0 {
+                            Some(format!("- {} at {:.1}% accuracy", character, key_accuracy))
+                        } else {
+                            None
+                        }
                     } else {
                         None
                     }
                 })
+                .take(5)
                 .map(Line::from),
         );
         let worst = Paragraph::new(worst_text).block(
