@@ -6,6 +6,10 @@ use serde::{de, Deserialize};
 pub struct KeyMap {
     #[serde(deserialize_with = "deseralize_key")]
     pub remove_previous_word: Option<Key>,
+    #[serde(deserialize_with = "deseralize_key")]
+    pub remove_previous_char: Option<Key>,
+    #[serde(deserialize_with = "deseralize_key")]
+    pub space: Option<Key>,
 }
 
 fn deseralize_key<'de, D>(deserializer: D) -> Result<Option<Key>, D::Error>
@@ -103,7 +107,7 @@ fn get_key_from_string(string: &str) -> Option<Key> {
             if string.len() == 1 {
                 key.code = KeyCode::Null;
             } else {
-                key.code = get_key_code_from_string(string)
+                key.code = get_key_code_from_string(string);
             }
         }
         2 => {
