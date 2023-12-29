@@ -69,7 +69,7 @@ impl Test {
 
         let word = &mut self.words[self.current_word];
 
-        match &config.key_map.space {
+        match &config.key_map.next_word {
             Some(config_key) => {
                 if key.code == config_key.code && key.modifiers.contains(config_key.modifier) {
                     if word.text.chars().nth(word.progress.len()) == Some(' ') {
