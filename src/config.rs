@@ -14,7 +14,6 @@ pub struct Config {
     pub key_map: KeyMap,
 }
 
-
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Theme {
