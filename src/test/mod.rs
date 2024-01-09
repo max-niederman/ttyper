@@ -1,10 +1,24 @@
 pub mod results;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use serde::{Serialize, Serializer};
 use std::fmt;
 use std::time::Instant;
 
+pub fn serialize_instant<S>(instant: &Instant, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let duration = instant.elapsed();
+    duration.serialize(serializer)
+}
+
+#[derive(Clone, Serialize)]
 pub struct TestEvent {
+    #[serde(
+        serialize_with = "serialize_instant",
+        deserialize_with = "deserialize_instant"
+    )]
     pub time: Instant,
     pub key: KeyEvent,
     pub correct: Option<bool>,
@@ -19,7 +33,7 @@ impl fmt::Debug for TestEvent {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct TestWord {
     pub text: String,
     pub progress: String,

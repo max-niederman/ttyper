@@ -13,6 +13,8 @@ use crossterm::{
 use rand::{seq::SliceRandom, thread_rng};
 use ratatui::{backend::CrosstermBackend, terminal::Terminal};
 use rust_embed::RustEmbed;
+use serde::Serialize;
+use serde_json;
 use std::{
     ffi::OsString,
     fs,
@@ -261,6 +263,8 @@ fn main() -> crossterm::Result<()> {
                 if let Event::Key(key) = event {
                     test.handle_key(key);
                     if test.complete {
+                        let data = serde_json::to_string(&test.words).unwrap();
+                        fs::write("export.json", data).expect("Unable to write file");
                         state = State::Results(Results::from(&*test));
                     }
                 }
