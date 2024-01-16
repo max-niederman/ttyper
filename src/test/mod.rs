@@ -96,8 +96,10 @@ impl Test {
                     word.progress.pop();
                 }
             }
-            // CTRL-BackSpace
-            KeyCode::Char('h') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            // CTRL-BackSpace and CTRL-W
+            KeyCode::Char('h') | KeyCode::Char('w')
+                if key.modifiers.contains(KeyModifiers::CONTROL) =>
+            {
                 if self.words[self.current_word].progress.is_empty() {
                     self.last_word();
                 }
