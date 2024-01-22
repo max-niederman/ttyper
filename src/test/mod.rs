@@ -10,6 +10,10 @@ pub struct TestEvent {
     pub correct: Option<bool>,
 }
 
+pub fn is_missed_word_event(event: &TestEvent) -> bool {
+    event.correct == Some(false) || event.correct.is_none()
+}
+
 impl fmt::Debug for TestEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TestEvent")
@@ -48,15 +52,17 @@ pub struct Test {
     pub current_word: usize,
     pub complete: bool,
     pub backtracking_enabled: bool,
+    pub sudden_death_enabled: bool,
 }
 
 impl Test {
-    pub fn new(words: Vec<String>, backtracking_enabled: bool) -> Self {
+    pub fn new(words: Vec<String>, backtracking_enabled: bool, sudden_death_enabled: bool) -> Self {
         Self {
             words: words.into_iter().map(TestWord::from).collect(),
             current_word: 0,
             complete: false,
             backtracking_enabled,
+            sudden_death_enabled,
         }
     }
 

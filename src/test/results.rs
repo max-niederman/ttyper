@@ -1,4 +1,4 @@
-use super::Test;
+use super::{is_missed_word_event, Test};
 
 use crossterm::event::KeyEvent;
 use std::collections::HashMap;
@@ -150,10 +150,6 @@ fn calc_accuracy(events: &[&super::TestEvent]) -> AccuracyData {
 }
 
 fn calc_missed_words(test: &Test) -> Vec<String> {
-    let is_missed_word_event = |event: &super::TestEvent| -> bool {
-        event.correct == Some(false) || event.correct.is_none()
-    };
-
     test.words
         .iter()
         .filter(|word| word.events.iter().any(is_missed_word_event))
