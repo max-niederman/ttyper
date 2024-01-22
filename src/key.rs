@@ -1,7 +1,7 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 use serde::{de, Deserialize};
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 #[serde(default)]
 pub struct KeyMap {
     #[serde(deserialize_with = "deseralize_key")]
@@ -35,7 +35,7 @@ where
     return deserializer.deserialize_str(KeyVisitor);
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Key {
     pub code: KeyCode,
     pub modifier: KeyModifiers,
