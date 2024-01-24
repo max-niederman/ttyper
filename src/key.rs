@@ -1,3 +1,5 @@
+use core::panic;
+
 use crossterm::event::{KeyCode, KeyModifiers};
 use serde::{de, Deserialize};
 
@@ -5,20 +7,20 @@ use serde::{de, Deserialize};
 #[serde(default)]
 pub struct KeyMap {
     #[serde(deserialize_with = "deseralize_key")]
-    pub remove_previous_word: Option<Key>,
+    pub remove_previous_word: Key,
     #[serde(deserialize_with = "deseralize_key")]
-    pub remove_previous_char: Option<Key>,
+    pub remove_previous_char: Key,
     #[serde(deserialize_with = "deseralize_key")]
-    pub next_word: Option<Key>,
+    pub next_word: Key,
 }
 
-fn deseralize_key<'de, D>(deserializer: D) -> Result<Option<Key>, D::Error>
+fn deseralize_key<'de, D>(deserializer: D) -> Result<Key, D::Error>
 where
     D: de::Deserializer<'de>,
 {
     struct KeyVisitor;
     impl<'de> de::Visitor<'de> for KeyVisitor {
-        type Value = Option<Key>;
+        type Value = Key;
 
         fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
             formatter.write_str("key specification")
@@ -28,7 +30,12 @@ where
         where
             E: de::Error,
         {
-            Ok(get_key_from_string(v))
+            match get_key_from_string(v) {
+                Some(key) => Ok(key),
+                None => {
+                    panic!("Key map `{}` is invalid", v)
+                }
+            }
         }
     }
 

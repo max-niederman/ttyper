@@ -71,66 +71,63 @@ impl Test {
 
         let word = &mut self.words[self.current_word];
 
-        match &self.config.key_map.next_word {
-            Some(config_key) => {
-                if key.code == config_key.code && key.modifiers.contains(config_key.modifier) {
-                    if word.text.chars().nth(word.progress.len()) == Some(' ') {
-                        word.progress.push(' ');
-                        word.events.push(TestEvent {
-                            time: Instant::now(),
-                            correct: Some(true),
-                            key,
-                        })
-                    } else if !word.progress.is_empty() || word.text.is_empty() {
-                        word.events.push(TestEvent {
-                            time: Instant::now(),
-                            correct: Some(word.text == word.progress),
-                            key,
-                        });
-                        self.next_word();
-                    }
-                    return;
-                }
+        if key.code == self.config.key_map.next_word.code
+            && key
+                .modifiers
+                .contains(self.config.key_map.next_word.modifier)
+        {
+            if word.text.chars().nth(word.progress.len()) == Some(' ') {
+                word.progress.push(' ');
+                word.events.push(TestEvent {
+                    time: Instant::now(),
+                    correct: Some(true),
+                    key,
+                })
+            } else if !word.progress.is_empty() || word.text.is_empty() {
+                word.events.push(TestEvent {
+                    time: Instant::now(),
+                    correct: Some(word.text == word.progress),
+                    key,
+                });
+                self.next_word();
             }
-            None => {}
+            return;
         }
 
-        match &self.config.key_map.remove_previous_char {
-            Some(config_key) => {
-                if key.code == config_key.code && key.modifiers.contains(config_key.modifier) {
-                    if word.progress.is_empty() && self.backtracking_enabled {
-                        self.last_word();
-                    } else {
-                        word.events.push(TestEvent {
-                            time: Instant::now(),
-                            correct: Some(!word.text.starts_with(&word.progress[..])),
-                            key,
-                        });
-                        word.progress.pop();
-                    }
-                    return;
-                }
+        if key.code == self.config.key_map.remove_previous_char.code
+            && key
+                .modifiers
+                .contains(self.config.key_map.remove_previous_char.modifier)
+        {
+            if word.progress.is_empty() && self.backtracking_enabled {
+                self.last_word();
+            } else {
+                word.events.push(TestEvent {
+                    time: Instant::now(),
+                    correct: Some(!word.text.starts_with(&word.progress[..])),
+                    key,
+                });
+                word.progress.pop();
             }
-            None => {}
+            return;
         }
 
-        match &self.config.key_map.remove_previous_word {
-            Some(config_key) => {
-                if key.code == config_key.code && key.modifiers.contains(config_key.modifier) {
-                    if self.words[self.current_word].progress.is_empty() {
-                        self.last_word();
-                    }
-                    let word = &mut self.words[self.current_word];
-                    word.events.push(TestEvent {
-                        time: Instant::now(),
-                        correct: None,
-                        key,
-                    });
-                    word.progress.clear();
-                    return;
-                }
+        if key.code == self.config.key_map.remove_previous_word.code
+            && key
+                .modifiers
+                .contains(self.config.key_map.remove_previous_word.modifier)
+        {
+            if self.words[self.current_word].progress.is_empty() {
+                self.last_word();
             }
-            None => {}
+            let word = &mut self.words[self.current_word];
+            word.events.push(TestEvent {
+                time: Instant::now(),
+                correct: None,
+                key,
+            });
+            word.progress.clear();
+            return;
         }
 
         match key.code {
