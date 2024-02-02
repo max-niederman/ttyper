@@ -10,6 +10,10 @@ pub struct TestEvent {
     pub correct: Option<bool>,
 }
 
+pub fn is_missed_word_event(event: &TestEvent) -> bool {
+    event.correct != Some(true)
+}
+
 impl fmt::Debug for TestEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TestEvent")
@@ -48,15 +52,17 @@ pub struct Test {
     pub current_word: usize,
     pub complete: bool,
     pub backtracking_enabled: bool,
+    pub sudden_death_enabled: bool,
 }
 
 impl Test {
-    pub fn new(words: Vec<String>, backtracking_enabled: bool) -> Self {
+    pub fn new(words: Vec<String>, backtracking_enabled: bool, sudden_death_enabled: bool) -> Self {
         Self {
             words: words.into_iter().map(TestWord::from).collect(),
             current_word: 0,
             complete: false,
             backtracking_enabled,
+            sudden_death_enabled,
         }
     }
 
@@ -76,12 +82,17 @@ impl Test {
                         key,
                     })
                 } else if !word.progress.is_empty() || word.text.is_empty() {
-                    word.events.push(TestEvent {
-                        time: Instant::now(),
-                        correct: Some(word.text == word.progress),
-                        key,
-                    });
-                    self.next_word();
+                    let correct = word.text == word.progress;
+                    if self.sudden_death_enabled && !correct {
+                        self.reset();
+                    } else {
+                        word.events.push(TestEvent {
+                            time: Instant::now(),
+                            correct: Some(correct),
+                            key,
+                        });
+                        self.next_word();
+                    }
                 }
             }
             KeyCode::Backspace => {
@@ -115,14 +126,19 @@ impl Test {
             }
             KeyCode::Char(c) => {
                 word.progress.push(c);
-                word.events.push(TestEvent {
-                    time: Instant::now(),
-                    correct: Some(word.text.starts_with(&word.progress[..])),
-                    key,
-                });
-                if word.progress == word.text && self.current_word == self.words.len() - 1 {
-                    self.complete = true;
-                    self.current_word = 0;
+                let correct = word.text.starts_with(&word.progress[..]);
+                if self.sudden_death_enabled && !correct {
+                    self.reset();
+                } else {
+                    word.events.push(TestEvent {
+                        time: Instant::now(),
+                        correct: Some(correct),
+                        key,
+                    });
+                    if word.progress == word.text && self.current_word == self.words.len() - 1 {
+                        self.complete = true;
+                        self.current_word = 0;
+                    }
                 }
             }
             _ => {}
@@ -142,5 +158,14 @@ impl Test {
         } else {
             self.current_word += 1;
         }
+    }
+
+    fn reset(&mut self) {
+        self.words.iter_mut().for_each(|word: &mut TestWord| {
+            word.progress.clear();
+            word.events.clear();
+        });
+        self.current_word = 0;
+        self.complete = false;
     }
 }
