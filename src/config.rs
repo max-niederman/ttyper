@@ -4,23 +4,17 @@ use serde::{
     Deserialize,
 };
 
-#[derive(Debug, Deserialize)]
+use crate::key::KeyMap;
+
+#[derive(Debug, Deserialize, Default, Clone)]
 #[serde(default)]
 pub struct Config {
     pub default_language: String,
     pub theme: Theme,
+    pub key_map: KeyMap,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            default_language: "english200".into(),
-            theme: Theme::default(),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
 pub struct Theme {
     #[serde(deserialize_with = "deserialize_style")]
