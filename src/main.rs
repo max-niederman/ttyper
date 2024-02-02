@@ -3,7 +3,7 @@ mod test;
 mod ui;
 
 use config::Config;
-use test::{is_missed_word_event, results::Results, Test};
+use test::{results::Results, Test};
 
 use crossterm::{
     self, cursor,
@@ -267,25 +267,6 @@ fn main() -> io::Result<()> {
                     test.handle_key(key);
                     if test.complete {
                         state = State::Results(Results::from(&*test));
-                    } else if test.sudden_death_enabled {
-                        if test.words[test.current_word]
-                            .events
-                            .last()
-                            .is_some_and(is_missed_word_event)
-                            || test.current_word > 0
-                                && test.words[test.current_word - 1]
-                                    .events
-                                    .last()
-                                    .is_some_and(is_missed_word_event)
-                        {
-                            state = State::Test(Test::new(
-                                    opt.gen_contents().expect(
-                                        "Couldn't get test contents. Make sure the specified language actually exists.",
-                                        ),
-                                        !opt.no_backtrack,
-                                        opt.sudden_death
-                                        ));
-                        }
                     }
                 }
             }

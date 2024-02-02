@@ -82,12 +82,17 @@ impl Test {
                         key,
                     })
                 } else if !word.progress.is_empty() || word.text.is_empty() {
-                    word.events.push(TestEvent {
-                        time: Instant::now(),
-                        correct: Some(word.text == word.progress),
-                        key,
-                    });
-                    self.next_word();
+                    let correct = word.text == word.progress;
+                    if self.sudden_death_enabled && !correct {
+                        self.reset();
+                    } else {
+                        word.events.push(TestEvent {
+                            time: Instant::now(),
+                            correct: Some(correct),
+                            key,
+                        });
+                        self.next_word();
+                    }
                 }
             }
             KeyCode::Backspace => {
@@ -121,14 +126,19 @@ impl Test {
             }
             KeyCode::Char(c) => {
                 word.progress.push(c);
-                word.events.push(TestEvent {
-                    time: Instant::now(),
-                    correct: Some(word.text.starts_with(&word.progress[..])),
-                    key,
-                });
-                if word.progress == word.text && self.current_word == self.words.len() - 1 {
-                    self.complete = true;
-                    self.current_word = 0;
+                let correct = word.text.starts_with(&word.progress[..]);
+                if self.sudden_death_enabled && !correct {
+                    self.reset();
+                } else {
+                    word.events.push(TestEvent {
+                        time: Instant::now(),
+                        correct: Some(correct),
+                        key,
+                    });
+                    if word.progress == word.text && self.current_word == self.words.len() - 1 {
+                        self.complete = true;
+                        self.current_word = 0;
+                    }
                 }
             }
             _ => {}
@@ -148,5 +158,14 @@ impl Test {
         } else {
             self.current_word += 1;
         }
+    }
+
+    fn reset(&mut self) {
+        self.words.iter_mut().for_each(|word: &mut TestWord| {
+            word.progress.clear();
+            word.events.clear();
+        });
+        self.current_word = 0;
+        self.complete = false;
     }
 }
