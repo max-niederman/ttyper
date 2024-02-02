@@ -11,7 +11,7 @@ pub struct TestEvent {
 }
 
 pub fn is_missed_word_event(event: &TestEvent) -> bool {
-    event.correct == Some(false) || event.correct.is_none()
+    event.correct != Some(true)
 }
 
 impl fmt::Debug for TestEvent {
