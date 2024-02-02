@@ -12,12 +12,12 @@ edition = "2021"
 [dependencies]
 structopt = "^0.3"
 dirs = "^5.0"
-crossterm = "^0.26"
-rust-embed = "^6.4"
-toml = "^0.7"
+crossterm = "^0.27"
+rust-embed = "^8.2"
+toml = "^0.8"
 
 [dependencies.ratatui]
-version = "^0.21"
+version = "^0.25"
 
 [dependencies.rand]
 version = "^0.8"

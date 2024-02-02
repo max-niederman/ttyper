@@ -175,7 +175,7 @@ impl State {
         &self,
         terminal: &mut Terminal<B>,
         config: &Config,
-    ) -> crossterm::Result<()> {
+    ) -> io::Result<()> {
         match self {
             State::Test(test) => {
                 terminal.draw(|f| {
@@ -192,7 +192,7 @@ impl State {
     }
 }
 
-fn main() -> crossterm::Result<()> {
+fn main() -> io::Result<()> {
     let opt = Opt::from_args();
     if opt.debug {
         dbg!(&opt);
