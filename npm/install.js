@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 const packageJson = JSON.parse(fs.readFileSync("./package.json", "utf8"));
 // The version number is expected to be in parity with the ttyper release version
-const { version, repository, name, binDir: directory } = packageJson;
+const { version, releasesUrl, name, binDir: directory } = packageJson;
 
 // All the binary files will be stored in the /bin directory
 const binDir = path.join(__dirname, directory);
@@ -70,7 +70,7 @@ function getBinaryDownloadURL() {
 
   const extension = os === "pc-windows-msvc" ? "zip" : "tar.gz";
 
-  return `${repository}/releases/download/v${version}/${name}-${arch}-${os}.${extension}`;
+  return `${releasesUrl}/download/v${version}/${name}-${arch}-${os}.${extension}`;
 }
 
 function downloadPackage(url, outputPath) {
