@@ -59,6 +59,10 @@ struct Opt {
     /// Disable backtracking to completed words
     #[structopt(long)]
     no_backtrack: bool,
+
+    /// Enable sudden death mode to restart on first error
+    #[structopt(long)]
+    sudden_death: bool,
 }
 
 impl Opt {
@@ -175,7 +179,7 @@ impl State {
         &self,
         terminal: &mut Terminal<B>,
         config: &Config,
-    ) -> crossterm::Result<()> {
+    ) -> io::Result<()> {
         match self {
             State::Test(test) => {
                 terminal.draw(|f| {
@@ -192,7 +196,7 @@ impl State {
     }
 }
 
-fn main() -> crossterm::Result<()> {
+fn main() -> io::Result<()> {
     let opt = Opt::from_args();
     if opt.debug {
         dbg!(&opt);
@@ -228,6 +232,7 @@ fn main() -> crossterm::Result<()> {
             "Couldn't get test contents. Make sure the specified language actually exists.",
         ),
         !opt.no_backtrack,
+        opt.sudden_death,
     ));
 
     state.render_into(&mut terminal, &config)?;
@@ -276,7 +281,8 @@ fn main() -> crossterm::Result<()> {
                         opt.gen_contents().expect(
                             "Couldn't get test contents. Make sure the specified language actually exists.",
                         ),
-                        !opt.no_backtrack
+                        !opt.no_backtrack,
+                        opt.sudden_death
                     ));
                 }
                 Event::Key(KeyEvent {
@@ -294,7 +300,11 @@ fn main() -> crossterm::Result<()> {
                         .flat_map(|w| vec![w.clone(); 5])
                         .collect();
                     practice_words.shuffle(&mut thread_rng());
-                    state = State::Test(Test::new(practice_words, !opt.no_backtrack));
+                    state = State::Test(Test::new(
+                        practice_words,
+                        !opt.no_backtrack,
+                        opt.sudden_death,
+                    ));
                 }
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('q'),
