@@ -39,7 +39,7 @@ scoop install ttyper
 For usage instructions, you can run `ttyper --help`:
 
 ```
-ttyper 1.4.0
+ttyper 1.5.0
 Terminal-based typing test.
 
 USAGE:
@@ -50,6 +50,7 @@ FLAGS:
     -h, --help              Prints help information
         --list-languages    List installed languages
         --no-backtrack      Disable backtracking to completed words
+        --sudden-death      Enable sudden death mode to restart on first error
     -V, --version           Prints version information
 
 OPTIONS:
