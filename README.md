@@ -22,6 +22,12 @@ Pre-built binaries are available for most architectures on [GitHub releases](htt
 cargo install ttyper
 ```
 
+### arch linux
+
+```bash
+pacman -S ttyper
+```
+
 ### scoop
 
 ```bash
