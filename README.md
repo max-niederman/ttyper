@@ -77,31 +77,34 @@ ARGS:
 
 The following languages are available by default:
 
-| name               |                         description |
-| :----------------- | ----------------------------------: |
-| `c`                |          The C programming language |
-| `csharp`           |         The C# programming language |
-| `english100`       |       100 most common English words |
-| `english200`       |       200 most common English words |
-| `english1000`      |      1000 most common English words |
-| `english-advanced` |              Advanced English words |
-| `english-pirate`   |       50 pirate speak English words |
-| `german`           |        207 most common German words |
-| `german1000`       |       1000 most common German words |
-| `german10000`      |      10000 most common German words |
-| `go`               |         The Go programming language |
-| `html`             |           HyperText Markup Language |
-| `java`             |       The Java programming language |
-| `javascript`       | The Javascript programming language |
-| `norwegian`        |     200 most common Norwegian words |
-| `php`              |        The PHP programming language |
-| `portuguese`       |    100 most common Portuguese words |
-| `python`           |     The Python programming language |
-| `qt`               |                The QT GUI framework |
-| `ruby`             |       The Ruby programming language |
-| `rust`             |       The Rust programming language |
-| `spanish`          |       100 most common Spanish words |
-| `ukrainian`        |     100 most common Ukrainian words |
+| name                 |                         description |
+| :------------------- | ----------------------------------: |
+| `c`                  |          The C programming language |
+| `csharp`             |         The C# programming language |
+| `english100`         |       100 most common English words |
+| `english200`         |       200 most common English words |
+| `english1000`        |      1000 most common English words |
+| `english-advanced`   |              Advanced English words |
+| `english-pirate`     |       50 pirate speak English words |
+| `german`             |        207 most common German words |
+| `german1000`         |       1000 most common German words |
+| `german10000`        |      10000 most common German words |
+| `go`                 |         The Go programming language |
+| `html`               |           HyperText Markup Language |
+| `java`               |       The Java programming language |
+| `javascript`         | The Javascript programming language |
+| `norwegian`          |     200 most common Norwegian words |
+| `php`                |        The PHP programming language |
+| `portuguese`         |    100 most common Portuguese words |
+| `portuguese200`      |    200 most common Portuguese words |
+| `portuguese1000`     |   1000 most common Portuguese words |
+| `portuguese-advanced`|           Advanced Portuguese words |
+| `python`             |     The Python programming language |
+| `qt`                 |                The QT GUI framework |
+| `ruby`               |       The Ruby programming language |
+| `rust`               |       The Rust programming language |
+| `spanish`            |       100 most common Spanish words |
+| `ukrainian`          |     100 most common Ukrainian words |
 
 Additional languages can be added by creating a file in `TTYPER_CONFIG_DIR/language` with a word on each line. On Linux, the config directory is `$HOME/.config/ttyper`; on Windows, it's `C:\Users\user\AppData\Roaming\ttyper`; and on macOS it's `$HOME/Library/Application Support/ttyper`.
 
