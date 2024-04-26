@@ -3,12 +3,17 @@
 [![Crates.io](https://img.shields.io/crates/v/ttyper)](https://crates.io/crates/ttyper)
 [![GitHub Stars](https://img.shields.io/github/stars/max-niederman/ttyper)](https://github.com/max-niederman/ttyper)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/max-niederman/ttyper/rust.yml)](https://github.com/max-niederman/ttyper/actions)
-[![GitHub issues](https://img.shields.io/github/issues/max-niederman/ttyper)](https://github.com/max-niederman/ttype/github/actions/workflow/status/:user/:repo/:workflow+r/issues)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/max-niederman/ttyper)
+[![Discord](https://img.shields.io/discord/1233267011963060275?logo=discord)](https://discord.gg/3wJyrBsKXu)
 [![License](https://img.shields.io/crates/l/ttyper)](./LICENSE.md)
 
 ttyper is a terminal-based typing test built with Rust and Ratatui.
 
 ![Recording](./resources/recording.gif)
+
+## chat
+
+If you're interested in contributing to ttyper, need help with an issue, or just want to hang out, you should join [the development Discord server](https://discord.gg/3wJyrBsKXu).
 
 ## installation
 
@@ -26,6 +31,12 @@ cargo install ttyper
 
 ```bash
 pacman -S ttyper
+```
+
+### nix
+
+```bash
+nix-env -iA nixpkgs.ttyper # or nixos.ttyper on NixOS
 ```
 
 ### scoop
