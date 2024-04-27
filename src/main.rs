@@ -30,6 +30,8 @@ struct Resources;
 #[derive(Debug, Parser)]
 #[command(about, version)]
 struct Opt {
+    /// Read test contents from the specified file, or "-" for stdin
+    #[arg(value_name = "PATH")]
     contents: Option<PathBuf>,
 
     #[arg(short, long)]
