@@ -5,6 +5,7 @@ mod ui;
 use config::Config;
 use test::{results::Results, Test};
 
+use clap::Parser;
 use crossterm::{
     self, cursor,
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -21,47 +22,47 @@ use std::{
     path::PathBuf,
     str,
 };
-use structopt::StructOpt;
 
 #[derive(RustEmbed)]
 #[folder = "resources/runtime"]
 struct Resources;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "ttyper", about = "Terminal-based typing test.")]
+#[derive(Debug, Parser)]
+#[command(about, version)]
 struct Opt {
-    #[structopt(parse(from_os_str))]
+    /// Read test contents from the specified file, or "-" for stdin
+    #[arg(value_name = "PATH")]
     contents: Option<PathBuf>,
 
-    #[structopt(short, long)]
+    #[arg(short, long)]
     debug: bool,
 
     /// Specify word count
-    #[structopt(short, long, default_value = "50")]
+    #[arg(short, long, value_name = "N", default_value = "50")]
     words: num::NonZeroUsize,
 
     /// Use config file
-    #[structopt(short, long)]
+    #[arg(short, long, value_name = "PATH")]
     config: Option<PathBuf>,
 
     /// Specify test language in file
-    #[structopt(long, parse(from_os_str))]
+    #[arg(long, value_name = "PATH")]
     language_file: Option<PathBuf>,
 
     /// Specify test language
-    #[structopt(short, long)]
+    #[arg(short, long, value_name = "LANG")]
     language: Option<String>,
 
     /// List installed languages
-    #[structopt(long)]
+    #[arg(long)]
     list_languages: bool,
 
     /// Disable backtracking to completed words
-    #[structopt(long)]
+    #[arg(long)]
     no_backtrack: bool,
 
     /// Enable sudden death mode to restart on first error
-    #[structopt(long)]
+    #[arg(long)]
     sudden_death: bool,
 }
 
@@ -197,7 +198,7 @@ impl State {
 }
 
 fn main() -> io::Result<()> {
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
     if opt.debug {
         dbg!(&opt);
     }

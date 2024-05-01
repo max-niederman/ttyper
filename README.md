@@ -3,12 +3,17 @@
 [![Crates.io](https://img.shields.io/crates/v/ttyper)](https://crates.io/crates/ttyper)
 [![GitHub Stars](https://img.shields.io/github/stars/max-niederman/ttyper)](https://github.com/max-niederman/ttyper)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/max-niederman/ttyper/rust.yml)](https://github.com/max-niederman/ttyper/actions)
-[![GitHub issues](https://img.shields.io/github/issues/max-niederman/ttyper)](https://github.com/max-niederman/ttype/github/actions/workflow/status/:user/:repo/:workflow+r/issues)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/max-niederman/ttyper)
+[![Discord](https://img.shields.io/discord/1233267011963060275?logo=discord)](https://discord.gg/3wJyrBsKXu)
 [![License](https://img.shields.io/crates/l/ttyper)](./LICENSE.md)
 
-ttyper is a terminal-based typing test built with Rust and tui-rs.
+ttyper is a terminal-based typing test built with Rust and Ratatui.
 
 ![Recording](./resources/recording.gif)
+
+## chat
+
+If you're interested in contributing to ttyper, need help with an issue, or just want to hang out, you should join [the development Discord server](https://discord.gg/3wJyrBsKXu).
 
 ## installation
 
@@ -22,6 +27,18 @@ Pre-built binaries are available for most architectures on [GitHub releases](htt
 cargo install ttyper
 ```
 
+### arch linux
+
+```bash
+pacman -S ttyper
+```
+
+### nix
+
+```bash
+nix-env -iA nixpkgs.ttyper # or nixos.ttyper on NixOS
+```
+
 ### scoop
 
 ```bash
@@ -33,7 +50,7 @@ scoop install ttyper
 For usage instructions, you can run `ttyper --help`:
 
 ```
-ttyper 1.4.0
+ttyper 1.5.0
 Terminal-based typing test.
 
 USAGE:
@@ -44,6 +61,7 @@ FLAGS:
     -h, --help              Prints help information
         --list-languages    List installed languages
         --no-backtrack      Disable backtracking to completed words
+        --sudden-death      Enable sudden death mode to restart on first error
     -V, --version           Prints version information
 
 OPTIONS:
@@ -70,31 +88,34 @@ ARGS:
 
 The following languages are available by default:
 
-| name               |                         description |
-| :----------------- | ----------------------------------: |
-| `c`                |          The C programming language |
-| `csharp`           |         The C# programming language |
-| `english100`       |       100 most common English words |
-| `english200`       |       200 most common English words |
-| `english1000`      |      1000 most common English words |
-| `english-advanced` |              Advanced English words |
-| `english-pirate`   |       50 pirate speak English words |
-| `german`           |        207 most common German words |
-| `german1000`       |       1000 most common German words |
-| `german10000`      |      10000 most common German words |
-| `go`               |         The Go programming language |
-| `html`             |           HyperText Markup Language |
-| `java`             |       The Java programming language |
-| `javascript`       | The Javascript programming language |
-| `norwegian`        |     200 most common Norwegian words |
-| `php`              |        The PHP programming language |
-| `portuguese`       |    100 most common Portuguese words |
-| `python`           |     The Python programming language |
-| `qt`               |                The QT GUI framework |
-| `ruby`             |       The Ruby programming language |
-| `rust`             |       The Rust programming language |
-| `spanish`          |       100 most common Spanish words |
-| `ukrainian`        |     100 most common Ukrainian words |
+| name                 |                         description |
+| :------------------- | ----------------------------------: |
+| `c`                  |          The C programming language |
+| `csharp`             |         The C# programming language |
+| `english100`         |       100 most common English words |
+| `english200`         |       200 most common English words |
+| `english1000`        |      1000 most common English words |
+| `english-advanced`   |              Advanced English words |
+| `english-pirate`     |       50 pirate speak English words |
+| `german`             |        207 most common German words |
+| `german1000`         |       1000 most common German words |
+| `german10000`        |      10000 most common German words |
+| `go`                 |         The Go programming language |
+| `html`               |           HyperText Markup Language |
+| `java`               |       The Java programming language |
+| `javascript`         | The Javascript programming language |
+| `norwegian`          |     200 most common Norwegian words |
+| `php`                |        The PHP programming language |
+| `portuguese`         |    100 most common Portuguese words |
+| `portuguese200`      |    200 most common Portuguese words |
+| `portuguese1000`     |   1000 most common Portuguese words |
+| `portuguese-advanced`|           Advanced Portuguese words |
+| `python`             |     The Python programming language |
+| `qt`                 |                The QT GUI framework |
+| `ruby`               |       The Ruby programming language |
+| `rust`               |       The Rust programming language |
+| `spanish`            |       100 most common Spanish words |
+| `ukrainian`          |     100 most common Ukrainian words |
 
 Additional languages can be added by creating a file in `TTYPER_CONFIG_DIR/language` with a word on each line. On Linux, the config directory is `$HOME/.config/ttyper`; on Windows, it's `C:\Users\user\AppData\Roaming\ttyper`; and on macOS it's `$HOME/Library/Application Support/ttyper`.
 
