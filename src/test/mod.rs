@@ -4,6 +4,10 @@ use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::fmt;
 use std::time::Instant;
 
+use rand::{seq::SliceRandom, thread_rng};
+
+use crate::Opt;
+
 pub struct TestEvent {
     pub time: Instant,
     pub key: KeyEvent,
@@ -53,16 +57,29 @@ pub struct Test {
     pub complete: bool,
     pub backtracking_enabled: bool,
     pub sudden_death_enabled: bool,
+    pub tab_to_next_enabled: bool,
+
+    is_practice_mode: bool,
+    config: Opt,
 }
 
 impl Test {
-    pub fn new(words: Vec<String>, backtracking_enabled: bool, sudden_death_enabled: bool) -> Self {
+    pub fn new(
+        words: Vec<String>,
+        backtracking_enabled: bool,
+        sudden_death_enabled: bool,
+        tab_to_next_enabled: bool,
+        config: Opt,
+    ) -> Self {
         Self {
             words: words.into_iter().map(TestWord::from).collect(),
             current_word: 0,
             complete: false,
             backtracking_enabled,
             sudden_death_enabled,
+            tab_to_next_enabled,
+            is_practice_mode: false,
+            config,
         }
     }
 
@@ -141,6 +158,11 @@ impl Test {
                     }
                 }
             }
+            KeyCode::Tab => {
+                if self.tab_to_next_enabled {
+                    self.next_test();
+                }
+            }
             _ => {}
         };
     }
@@ -167,5 +189,22 @@ impl Test {
         });
         self.current_word = 0;
         self.complete = false;
+    }
+
+    pub fn practice(&mut self) {
+        self.is_practice_mode = true;
+    }
+
+    fn next_test(&mut self) {
+        if self.is_practice_mode {
+            self.words.shuffle(&mut thread_rng());
+            self.reset();
+        } else {
+            self.reset();
+            let new_test_words = self.config.gen_contents().expect(
+                "Couldn't get test contents. Make sure the specified language actually exists.",
+            );
+            self.words = new_test_words.into_iter().map(TestWord::from).collect();
+        }
     }
 }
