@@ -101,7 +101,7 @@ impl History {
     }
 
     /// Push a typed grapheme cluster to the history.
-    fn push_typed(&mut self, typed: &str) {
+    pub fn push_typed(&mut self, typed: &str) {
         debug_assert_eq!(typed.graphemes(true).count(), 1);
 
         // Push the index of the cluster.
