@@ -12,6 +12,8 @@ pub struct Config {
     pub default_language: PathBuf,
     pub default_lexer: String,
 
+    pub max_misalignment: usize,
+
     pub theme: Theme,
 }
 
@@ -20,6 +22,8 @@ impl Default for Config {
         Self {
             default_language: "english200".into(),
             default_lexer: "extended-grapheme-clusters".into(), // TODO: this should be unicode words probably
+
+            max_misalignment: 8,
 
             theme: Theme::default(),
         }

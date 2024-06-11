@@ -1,7 +1,7 @@
 [package]
 name = "ttyper"
 description = "Terminal-based typing test."
-version = "1.2.0"
+version = "2.0.0-pre.1"
 readme = "README.md"
 repository = "https://github.com/max-niederman/ttyper.git"
 homepage = "https://github.com/max-niederman/ttyper"
@@ -10,14 +10,14 @@ authors = ["Max Niederman <max@maxniederman.com>"]
 edition = "2018"
 
 [dependencies]
-crossterm = "0.26"
-clap = { version = "4.3", features = ["derive"] }
-ratatui = "0.21"
-unicode-segmentation = "1.10"
+crossterm = "0.27.0"
+clap = { version = "4.5.7", features = ["derive"] }
+ratatui = "0.26.3"
+unicode-segmentation = "1.11.0"
 rand = "0.8.5"
-serde = { version = "1.0.171", features = ["derive"] }
+serde = { version = "1.0.203", features = ["derive"] }
 dirs = "5.0.1"
-toml = "0.7.6"
+toml = "0.8.14"
 
 [dev-dependencies]
 rand_chacha = "0.3.1"

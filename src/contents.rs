@@ -14,7 +14,7 @@ use crate::opt::{Command, FileLexer};
 
 /// A trait for types that can be used as trial contents.
 ///
-/// The iterator should yield "atoms," the smallest chunks
+/// The iterator should yield "words," i.e. the smallest chunks
 /// of the test that should not be split across line breaks.
 pub trait Contents: Iterator<Item = String> {
     fn restart(&mut self);
