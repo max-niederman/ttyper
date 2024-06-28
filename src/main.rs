@@ -27,7 +27,7 @@ use std::{
 #[folder = "resources/runtime"]
 struct Resources;
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 #[command(about, version)]
 struct Opt {
     /// Read test contents from the specified file, or "-" for stdin
@@ -64,6 +64,10 @@ struct Opt {
     /// Enable sudden death mode to restart on first error
     #[arg(long)]
     sudden_death: bool,
+
+    /// Click TAB to start new Test while writing a test
+    #[arg(long)]
+    tab_to_next: bool,
 }
 
 impl Opt {
@@ -234,6 +238,8 @@ fn main() -> io::Result<()> {
         ),
         !opt.no_backtrack,
         opt.sudden_death,
+        opt.tab_to_next || config.tab_to_next,
+        opt.clone(),
     ));
 
     state.render_into(&mut terminal, &config)?;
@@ -283,7 +289,9 @@ fn main() -> io::Result<()> {
                             "Couldn't get test contents. Make sure the specified language actually exists.",
                         ),
                         !opt.no_backtrack,
-                        opt.sudden_death
+                        opt.sudden_death,
+                        opt.tab_to_next || config.tab_to_next,
+                        opt.clone()
                     ));
                 }
                 Event::Key(KeyEvent {
@@ -301,11 +309,15 @@ fn main() -> io::Result<()> {
                         .flat_map(|w| vec![w.clone(); 5])
                         .collect();
                     practice_words.shuffle(&mut thread_rng());
-                    state = State::Test(Test::new(
+                    let mut test = Test::new(
                         practice_words,
                         !opt.no_backtrack,
                         opt.sudden_death,
-                    ));
+                        opt.tab_to_next || config.tab_to_next,
+                        opt.clone(),
+                    );
+                    test.practice();
+                    state = State::Test(test);
                 }
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('q'),

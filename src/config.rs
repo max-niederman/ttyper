@@ -8,6 +8,7 @@ use serde::{
 #[serde(default)]
 pub struct Config {
     pub default_language: String,
+    pub tab_to_next: bool,
     pub theme: Theme,
 }
 
@@ -15,6 +16,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             default_language: "english200".into(),
+            tab_to_next: false,
             theme: Theme::default(),
         }
     }
