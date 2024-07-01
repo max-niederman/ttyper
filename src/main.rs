@@ -218,6 +218,9 @@ fn main() -> io::Result<()> {
 
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
+    let contents = opt
+        .gen_contents()
+        .expect("Couldn't get test contents. Make sure the specified language actually exists.");
 
     terminal::enable_raw_mode()?;
     execute!(
@@ -228,13 +231,7 @@ fn main() -> io::Result<()> {
     )?;
     terminal.clear()?;
 
-    let mut state = State::Test(Test::new(
-        opt.gen_contents().expect(
-            "Couldn't get test contents. Make sure the specified language actually exists.",
-        ),
-        !opt.no_backtrack,
-        opt.sudden_death,
-    ));
+    let mut state = State::Test(Test::new(contents, !opt.no_backtrack, opt.sudden_death));
 
     state.render_into(&mut terminal, &config)?;
     loop {
