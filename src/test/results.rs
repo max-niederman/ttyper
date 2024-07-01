@@ -43,19 +43,6 @@ impl fmt::Display for Fraction {
     }
 }
 
-pub trait PartialResults {
-    fn progress(&self) -> Fraction;
-}
-
-impl PartialResults for Test {
-    fn progress(&self) -> Fraction {
-        Fraction {
-            numerator: self.current_word + 1,
-            denominator: self.words.len(),
-        }
-    }
-}
-
 pub struct TimingData {
     // Instead of storing WPM, we store CPS (clicks per second)
     pub overall_cps: f64,
