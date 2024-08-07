@@ -9,7 +9,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     symbols::Marker,
     text::{Line, Span, Text},
-    widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType, Paragraph, Widget},
+    widgets::{Axis, Block, Borders, Chart, Dataset, GraphType, Paragraph, Widget},
 };
 use results::Fraction;
 
@@ -89,7 +89,7 @@ impl ThemedWidget for &Test {
             block: Block::default()
                 .title(Line::from(vec![Span::styled("Input", theme.title)]))
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
+                .border_type(theme.border_type)
                 .border_style(theme.input_border),
             area: chunks[0],
         };
@@ -126,7 +126,7 @@ impl ThemedWidget for &Test {
             Block::default()
                 .title(Span::styled("Prompt", theme.title))
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
+                .border_type(theme.border_type)
                 .border_style(theme.prompt_border),
         );
         target.render(chunks[1], buf);
@@ -317,7 +317,7 @@ impl ThemedWidget for &results::Results {
             Block::default()
                 .title(Span::styled("Overview", theme.title))
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
+                .border_type(theme.border_type)
                 .border_style(theme.results_overview_border),
         );
         overview.render(info_chunks[0], buf);
@@ -353,7 +353,7 @@ impl ThemedWidget for &results::Results {
             Block::default()
                 .title(Span::styled("Worst Keys", theme.title))
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
+                .border_type(theme.border_type)
                 .border_style(theme.results_worst_keys_border),
         );
         worst.render(info_chunks[1], buf);
