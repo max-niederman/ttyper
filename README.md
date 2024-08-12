@@ -249,9 +249,11 @@ modifier  = "bold"
 ```
 
 ### border types
+
 The following border types are supported in the config file.
+
 - `plain`
-- `rounded`
+- `rounded` (default)
 - `double`
 - `thick`
 - `quadrantinside`
