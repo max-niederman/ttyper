@@ -143,6 +143,9 @@ input_border = "cyan"
 # prompt box border
 prompt_border = "green"
 
+# border type
+border_type = "rounded"
+
 # correctly typed words
 prompt_correct = "green"
 # incorrectly typed words
@@ -244,5 +247,16 @@ modifier  = "bold"
           | "reversed"
           | "underlined" ;
 ```
+
+### border types
+
+The following border types are supported in the config file.
+
+- `plain`
+- `rounded` (default)
+- `double`
+- `thick`
+- `quadrantinside`
+- `quadrantoutside`
 
 If you're familiar with [serde](https://serde.rs), you can also read [the deserialization code](./src/config.rs).
