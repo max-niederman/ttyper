@@ -97,6 +97,9 @@ The following languages are available by default:
 | `english1000`        |      1000 most common English words |
 | `english-advanced`   |              Advanced English words |
 | `english-pirate`     |       50 pirate speak English words |
+| `french100`          |        100 most common French words |
+| `french200`          |        200 most common French words |
+| `french1000`         |       1000 most common French words |
 | `german`             |        207 most common German words |
 | `german1000`         |       1000 most common German words |
 | `german10000`        |      10000 most common German words |
