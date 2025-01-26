@@ -45,6 +45,13 @@ nix-env -iA nixpkgs.ttyper # or nixos.ttyper on NixOS
 scoop install ttyper
 ```
 
+### fedora
+
+```bash
+dnf copr enable protocod/ttyper # add copr repository
+dnf install ttyper
+```
+
 ## usage
 
 For usage instructions, you can run `ttyper --help`:
