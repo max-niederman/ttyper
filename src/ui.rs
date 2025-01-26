@@ -60,7 +60,7 @@ pub struct Themed<'t, W: ?Sized> {
     theme: &'t Theme,
     widget: W,
 }
-impl<'t, W: ThemedWidget> Widget for Themed<'t, W> {
+impl<W: ThemedWidget> Widget for Themed<'_, W> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         self.widget.render(area, buf, self.theme)
     }
