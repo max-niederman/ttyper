@@ -135,7 +135,7 @@ where
     D: de::Deserializer<'de>,
 {
     struct StyleVisitor;
-    impl<'de> de::Visitor<'de> for StyleVisitor {
+    impl de::Visitor<'_> for StyleVisitor {
         type Value = Style;
 
         fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -190,7 +190,7 @@ where
     D: de::Deserializer<'de>,
 {
     struct ColorVisitor;
-    impl<'de> de::Visitor<'de> for ColorVisitor {
+    impl de::Visitor<'_> for ColorVisitor {
         type Value = Color;
 
         fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -244,7 +244,7 @@ where
     D: de::Deserializer<'de>,
 {
     struct BorderTypeVisitor;
-    impl<'de> de::Visitor<'de> for BorderTypeVisitor {
+    impl de::Visitor<'_> for BorderTypeVisitor {
         type Value = BorderType;
 
         fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
