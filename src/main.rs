@@ -64,6 +64,10 @@ struct Opt {
     /// Enable sudden death mode to restart on first error
     #[arg(long)]
     sudden_death: bool,
+
+    /// Disable backspace
+    #[arg(long)]
+    no_backspace: bool,
 }
 
 impl Opt {
@@ -231,7 +235,12 @@ fn main() -> io::Result<()> {
     )?;
     terminal.clear()?;
 
-    let mut state = State::Test(Test::new(contents, !opt.no_backtrack, opt.sudden_death));
+    let mut state = State::Test(Test::new(
+        contents,
+        !opt.no_backtrack,
+        opt.sudden_death,
+        !opt.no_backspace,
+    ));
 
     state.render_into(&mut terminal, &config)?;
     loop {
@@ -280,7 +289,8 @@ fn main() -> io::Result<()> {
                             "Couldn't get test contents. Make sure the specified language actually exists.",
                         ),
                         !opt.no_backtrack,
-                        opt.sudden_death
+                        opt.sudden_death,
+                        !opt.no_backspace,
                     ));
                 }
                 Event::Key(KeyEvent {
@@ -302,6 +312,7 @@ fn main() -> io::Result<()> {
                         practice_words,
                         !opt.no_backtrack,
                         opt.sudden_death,
+                        !opt.no_backspace,
                     ));
                 }
                 Event::Key(KeyEvent {

@@ -50,7 +50,7 @@ scoop install ttyper
 For usage instructions, you can run `ttyper --help`:
 
 ```
-ttyper 1.5.0
+ttyper 1.6.1
 Terminal-based typing test.
 
 USAGE:
@@ -62,6 +62,7 @@ FLAGS:
         --list-languages    List installed languages
         --no-backtrack      Disable backtracking to completed words
         --sudden-death      Enable sudden death mode to restart on first error
+        --no-backspace      Disable backspace
     -V, --version           Prints version information
 
 OPTIONS:
