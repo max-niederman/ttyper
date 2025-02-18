@@ -240,6 +240,10 @@ fn main() -> io::Result<()> {
         .gen_contents()
         .expect("Couldn't get test contents. Make sure the specified language actually exists.");
 
+    if contents.is_empty() {
+        panic!("Empty test contents.");
+    }
+
     terminal::enable_raw_mode()?;
     execute!(
         io::stdout(),
