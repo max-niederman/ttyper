@@ -120,6 +120,9 @@ The following languages are available by default:
 | `thai`               |         4000 most common Thai words |
 | `spanish`            |       100 most common Spanish words |
 | `ukrainian`          |     100 most common Ukrainian words |
+| `russian`         |    100 most common Russian words |
+| `russian1000`         |    100 most common Russian words |
+| `russian10000`         |    10000 most common Russian words |
 
 Additional languages can be added by creating a file in `TTYPER_CONFIG_DIR/language` with a word on each line. On Linux, the config directory is `$HOME/.config/ttyper`; on Windows, it's `C:\Users\user\AppData\Roaming\ttyper`; and on macOS it's `$HOME/Library/Application Support/ttyper`.
 
