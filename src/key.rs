@@ -9,7 +9,7 @@ pub struct KeyMap {
     #[serde(deserialize_with = "deseralize_key")]
     pub remove_previous_char: Option<Key>,
     #[serde(deserialize_with = "deseralize_key")]
-    pub space: Option<Key>,
+    pub next_word: Option<Key>,
 }
 
 fn deseralize_key<'de, D>(deserializer: D) -> Result<Option<Key>, D::Error>

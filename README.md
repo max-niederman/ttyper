@@ -40,7 +40,7 @@ USAGE:
     ttyper [FLAGS] [OPTIONS] [contents]
 
 FLAGS:
-    -d, --debug             
+    -d, --debug
     -h, --help              Prints help information
         --list-languages    List installed languages
         --no-backtrack      Disable backtracking to completed words
@@ -160,6 +160,41 @@ results_chart_y = "gray;italic"
 
 # restart/quit prompt in results ui
 results_restart_prompt = "gray;italic"
+
+[key_map]
+
+# key map for removing previous word
+remove_previous_word = "C-Backspace"
+
+# key map for removing previous character
+remove_previous_char = "Backspace"
+
+# key map for space/next word
+next_word = "Space"
+```
+
+### Key Maps
+
+In this config file, you can define key maps to customize your experience. Key maps allow you to associate specific actions with keyboard inputs.
+
+Key Map Structure:
+
+- Single characters are allowed only when accompanied by a modifier.
+- Certain special keys, like `Backspace`, are allowed both by themselves and with a modifier.
+
+Some examples:
+```toml
+[key_map]
+
+# This reperesnts `Ctrl + Backspace`
+remove_previous_word = "C-Backspace"
+
+# This reperesnts `Ctrl + h`
+remove_previous_char = "C-h"
+
+# This reperesnts `Space`
+next_word = "Space"
+
 ```
 
 ### style format
