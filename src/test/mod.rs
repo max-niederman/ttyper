@@ -4,6 +4,8 @@ use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::fmt;
 use std::time::Instant;
 
+use crate::config::Config;
+
 pub struct TestEvent {
     pub time: Instant,
     pub key: KeyEvent,
@@ -60,12 +62,75 @@ impl Test {
         }
     }
 
-    pub fn handle_key(&mut self, key: KeyEvent) {
+    pub fn handle_key(&mut self, config: &Config, key: KeyEvent) {
         if key.kind != KeyEventKind::Press {
             return;
         }
 
         let word = &mut self.words[self.current_word];
+
+        match &config.key_map.space {
+            Some(config_key) => {
+                if key.code == config_key.code && key.modifiers.contains(config_key.modifier) {
+                    if word.text.chars().nth(word.progress.len()) == Some(' ') {
+                        word.progress.push(' ');
+                        word.events.push(TestEvent {
+                            time: Instant::now(),
+                            correct: Some(true),
+                            key,
+                        })
+                    } else if !word.progress.is_empty() || word.text.is_empty() {
+                        word.events.push(TestEvent {
+                            time: Instant::now(),
+                            correct: Some(word.text == word.progress),
+                            key,
+                        });
+                        self.next_word();
+                    }
+                    return;
+                }
+            }
+            None => {}
+        }
+
+        match &config.key_map.remove_previous_char {
+            Some(config_key) => {
+                if key.code == config_key.code && key.modifiers.contains(config_key.modifier) {
+                    if word.progress.is_empty() && self.backtracking_enabled {
+                        self.last_word();
+                    } else {
+                        word.events.push(TestEvent {
+                            time: Instant::now(),
+                            correct: Some(!word.text.starts_with(&word.progress[..])),
+                            key,
+                        });
+                        word.progress.pop();
+                    }
+                    return;
+                }
+            }
+            None => {}
+        }
+
+        match &config.key_map.remove_previous_word {
+            Some(config_key) => {
+                if key.code == config_key.code && key.modifiers.contains(config_key.modifier) {
+                    if self.words[self.current_word].progress.is_empty() {
+                        self.last_word();
+                    }
+                    let word = &mut self.words[self.current_word];
+                    word.events.push(TestEvent {
+                        time: Instant::now(),
+                        correct: None,
+                        key,
+                    });
+                    word.progress.clear();
+                    return;
+                }
+            }
+            None => {}
+        }
+
         match key.code {
             KeyCode::Char(' ') | KeyCode::Enter => {
                 if word.text.chars().nth(word.progress.len()) == Some(' ') {
