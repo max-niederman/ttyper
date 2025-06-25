@@ -118,6 +118,9 @@ fn get_key_from_string(string: &str) -> Option<Key> {
                 let key_code = split.next();
                 if let Some(key_code) = key_code {
                     key.code = get_key_code_from_string(key_code);
+                    if key.code == KeyCode::Null {
+                        key.modifier = KeyModifiers::NONE;
+                    }
                 }
             }
         }
