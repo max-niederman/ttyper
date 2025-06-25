@@ -21,7 +21,7 @@ where
         type Value = Option<Key>;
 
         fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-            formatter.write_str("")
+            formatter.write_str("key specification")
         }
 
         fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
