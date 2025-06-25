@@ -51,7 +51,7 @@ impl Default for Key {
 }
 
 fn get_key_code_from_string(string: &str) -> KeyCode {
-    if string.len() == 1 {
+    if string.chars().count() == 1 {
         let key_code_char = string.chars().next();
         if let Some(key_code_char) = key_code_char {
             if key_code_char.is_lowercase() {
@@ -104,7 +104,7 @@ fn get_key_from_string(string: &str) -> Option<Key> {
     };
     match string.split('-').count() {
         1 => {
-            if string.len() == 1 {
+            if string.chars().count() == 1 {
                 key.code = KeyCode::Null;
             } else {
                 key.code = get_key_code_from_string(string);
@@ -114,7 +114,7 @@ fn get_key_from_string(string: &str) -> Option<Key> {
             let mut split = string.split('-');
             let key_code = split.next();
             if let Some(key_code) = key_code {
-                if key_code.len() == 1 {
+                if key_code.chars().count() == 1 {
                     key.modifier = get_key_modifier_from_string(key_code);
                 }
             }
