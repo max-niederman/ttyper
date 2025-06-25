@@ -50,26 +50,28 @@ pub struct Test {
     pub current_word: usize,
     pub complete: bool,
     pub backtracking_enabled: bool,
+    pub config: Config,
 }
 
 impl Test {
-    pub fn new(words: Vec<String>, backtracking_enabled: bool) -> Self {
+    pub fn new(words: Vec<String>, backtracking_enabled: bool, config: Config) -> Self {
         Self {
             words: words.into_iter().map(TestWord::from).collect(),
             current_word: 0,
             complete: false,
             backtracking_enabled,
+            config,
         }
     }
 
-    pub fn handle_key(&mut self, config: &Config, key: KeyEvent) {
+    pub fn handle_key(&mut self,  key: KeyEvent) {
         if key.kind != KeyEventKind::Press {
             return;
         }
 
         let word = &mut self.words[self.current_word];
 
-        match &config.key_map.next_word {
+        match &self.config.key_map.next_word {
             Some(config_key) => {
                 if key.code == config_key.code && key.modifiers.contains(config_key.modifier) {
                     if word.text.chars().nth(word.progress.len()) == Some(' ') {
@@ -93,7 +95,7 @@ impl Test {
             None => {}
         }
 
-        match &config.key_map.remove_previous_char {
+        match &self.config.key_map.remove_previous_char {
             Some(config_key) => {
                 if key.code == config_key.code && key.modifiers.contains(config_key.modifier) {
                     if word.progress.is_empty() && self.backtracking_enabled {
@@ -112,7 +114,7 @@ impl Test {
             None => {}
         }
 
-        match &config.key_map.remove_previous_word {
+        match &self.config.key_map.remove_previous_word {
             Some(config_key) => {
                 if key.code == config_key.code && key.modifiers.contains(config_key.modifier) {
                     if self.words[self.current_word].progress.is_empty() {

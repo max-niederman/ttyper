@@ -229,6 +229,7 @@ fn main() -> crossterm::Result<()> {
             "Couldn't get test contents. Make sure the specified language actually exists.",
         ),
         !opt.no_backtrack,
+        config.clone(),
     ));
 
     state.render_into(&mut terminal, &config)?;
@@ -260,7 +261,7 @@ fn main() -> crossterm::Result<()> {
         match state {
             State::Test(ref mut test) => {
                 if let Event::Key(key) = event {
-                    test.handle_key(&config, key);
+                    test.handle_key(key);
                     if test.complete {
                         state = State::Results(Results::from(&*test));
                     }
@@ -277,7 +278,8 @@ fn main() -> crossterm::Result<()> {
                         opt.gen_contents().expect(
                             "Couldn't get test contents. Make sure the specified language actually exists.",
                         ),
-                        !opt.no_backtrack
+                        !opt.no_backtrack,
+                        config.clone(),
                     ));
                 }
                 Event::Key(KeyEvent {
@@ -295,7 +297,8 @@ fn main() -> crossterm::Result<()> {
                         .flat_map(|w| vec![w.clone(); 5])
                         .collect();
                     practice_words.shuffle(&mut thread_rng());
-                    state = State::Test(Test::new(practice_words, !opt.no_backtrack));
+                    state =
+                        State::Test(Test::new(practice_words, !opt.no_backtrack, config.clone()));
                 }
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('q'),

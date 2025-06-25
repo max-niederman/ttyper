@@ -6,7 +6,7 @@ use serde::{
 
 use crate::key::KeyMap;
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 #[serde(default)]
 pub struct Config {
     pub default_language: String,
@@ -14,7 +14,7 @@ pub struct Config {
     pub key_map: KeyMap,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
 pub struct Theme {
     #[serde(deserialize_with = "deserialize_style")]
