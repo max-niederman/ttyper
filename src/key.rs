@@ -46,40 +46,78 @@ impl Default for Key {
     }
 }
 
-fn get_key_from_string(v: &str) -> Option<Key> {
+fn get_key_code_from_string(string: &str) -> KeyCode {
+    if string.len() == 1 {
+        let key_code_char = string.chars().next();
+        if let Some(key_code_char) = key_code_char {
+            if key_code_char.is_lowercase() {
+                return KeyCode::Char(key_code_char);
+            }
+        }
+    }
+    match string {
+        "Backspace" => KeyCode::Backspace,
+        "Enter" => KeyCode::Enter,
+        "Left" => KeyCode::Left,
+        "Right" => KeyCode::Right,
+        "Up" => KeyCode::Up,
+        "Down" => KeyCode::Down,
+        "Home" => KeyCode::Home,
+        "End" => KeyCode::End,
+        "PageUp" => KeyCode::PageUp,
+        "PageDown" => KeyCode::PageDown,
+        "Tab" => KeyCode::Tab,
+        "BackTab" => KeyCode::BackTab,
+        "Delete" => KeyCode::Delete,
+        "Insert" => KeyCode::Insert,
+        "Esc" => KeyCode::Esc,
+        "CapsLock" => KeyCode::CapsLock,
+        "ScrollLock" => KeyCode::ScrollLock,
+        "NumLock" => KeyCode::NumLock,
+        "PrintScreen" => KeyCode::PrintScreen,
+        "Pause" => KeyCode::Pause,
+        "Menu" => KeyCode::Menu,
+        "KeypadBegin" => KeyCode::KeypadBegin,
+        _ => KeyCode::Null,
+    }
+}
+
+fn get_key_modifier_from_string(string: &str) -> KeyModifiers {
+    match string {
+        "C" => KeyModifiers::CONTROL,
+        "A" => KeyModifiers::ALT,
+        "W" => KeyModifiers::SUPER,
+        "H" => KeyModifiers::HYPER,
+        "M" => KeyModifiers::META,
+        _ => KeyModifiers::NONE,
+    }
+}
+
+fn get_key_from_string(string: &str) -> Option<Key> {
     let mut key = Key {
         code: KeyCode::Null,
         modifier: KeyModifiers::NONE,
     };
-    match v.split('-').count() {
+    match string.split('-').count() {
+        1 => {
+            if string.len() == 1 {
+                key.code = KeyCode::Null;
+            } else {
+                key.code = get_key_code_from_string(string)
+            }
+        }
         2 => {
-            let mut split = v.split('-');
+            let mut split = string.split('-');
             let key_code = split.next();
             if let Some(key_code) = key_code {
                 if key_code.len() == 1 {
-                    let key_code_char = key_code.chars().next();
-                    if let Some(key_code_char) = key_code_char {
-                        match key_code_char {
-                            'C' => {
-                                key.modifier = KeyModifiers::CONTROL;
-                            }
-                            'A' => {
-                                key.modifier = KeyModifiers::ALT;
-                            }
-                            _ => {}
-                        }
-                    }
+                    key.modifier = get_key_modifier_from_string(key_code);
                 }
             }
-            let key_code = split.next();
-            if let Some(key_code) = key_code {
-                if key_code.len() == 1 {
-                    let key_code_char = key_code.chars().next();
-                    if let Some(key_code_char) = key_code_char {
-                        if key_code_char.is_lowercase() {
-                            key.code = KeyCode::Char(key_code_char)
-                        }
-                    }
+            if key.modifier != KeyModifiers::NONE {
+                let key_code = split.next();
+                if let Some(key_code) = key_code {
+                    key.code = get_key_code_from_string(key_code);
                 }
             }
         }
