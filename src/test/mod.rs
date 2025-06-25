@@ -64,7 +64,7 @@ impl Test {
         }
     }
 
-    pub fn handle_key(&mut self,  key: KeyEvent) {
+    pub fn handle_key(&mut self, key: KeyEvent) {
         if key.kind != KeyEventKind::Press {
             return;
         }
