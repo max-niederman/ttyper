@@ -154,7 +154,8 @@ This feature automatically:
 
 Save files are stored in your system's config directory under `saves/`:
 
-- **Linux/macOS**: `~/.config/ttyper/saves/`
+- **Linux**: `~/.config/ttyper/saves/`
+- **macOS**: `~/Library/Application Support/ttyper/saves/`
 - **Windows**: `%APPDATA%\ttyper\saves\`
 
 ### examples
