@@ -16,7 +16,7 @@ use crossterm::{
     terminal,
 };
 use rand::{seq::SliceRandom, thread_rng};
-use ratatui::{backend::CrosstermBackend, terminal::Terminal};
+use ratatui::{backend::CrosstermBackend, Terminal};
 use rust_embed::RustEmbed;
 use std::{
     ffi::OsString,
@@ -200,12 +200,12 @@ impl State {
         match self {
             State::Test(test) => {
                 terminal.draw(|f| {
-                    f.render_widget(config.theme.apply_to(test), f.size());
+                    f.render_widget(config.theme.apply_to(test), f.area());
                 })?;
             }
             State::Results(results) => {
                 terminal.draw(|f| {
-                    f.render_widget(config.theme.apply_to(results), f.size());
+                    f.render_widget(config.theme.apply_to(results), f.area());
                 })?;
             }
         }
