@@ -53,6 +53,7 @@ pub struct Test {
     pub complete: bool,
     pub backtracking_enabled: bool,
     pub sudden_death_enabled: bool,
+    pub scroll_mode: bool,
 }
 
 impl Test {
@@ -63,6 +64,7 @@ impl Test {
             complete: false,
             backtracking_enabled,
             sudden_death_enabled,
+            scroll_mode: false,
         }
     }
 

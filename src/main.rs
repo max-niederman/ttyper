@@ -64,6 +64,10 @@ struct Opt {
     /// Enable sudden death mode to restart on first error
     #[arg(long)]
     sudden_death: bool,
+
+    /// Keep current word at top of display (useful for long texts)
+    #[arg(long)]
+    scroll_mode: bool,
 }
 
 impl Opt {
@@ -218,6 +222,7 @@ fn main() -> io::Result<()> {
 
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
+
     let contents = opt
         .gen_contents()
         .expect("Couldn't get test contents. Make sure the specified language actually exists.");
@@ -231,7 +236,11 @@ fn main() -> io::Result<()> {
     )?;
     terminal.clear()?;
 
-    let mut state = State::Test(Test::new(contents, !opt.no_backtrack, opt.sudden_death));
+    let mut state = State::Test({
+        let mut test = Test::new(contents.clone(), !opt.no_backtrack, opt.sudden_death);
+        test.scroll_mode = opt.scroll_mode;
+        test
+    });
 
     state.render_into(&mut terminal, &config)?;
     loop {
@@ -275,13 +284,12 @@ fn main() -> io::Result<()> {
                     modifiers: KeyModifiers::NONE,
                     ..
                 }) => {
-                    state = State::Test(Test::new(
-                        opt.gen_contents().expect(
-                            "Couldn't get test contents. Make sure the specified language actually exists.",
-                        ),
-                        !opt.no_backtrack,
-                        opt.sudden_death
-                    ));
+                    let new_contents = opt.gen_contents().expect(
+                        "Couldn't get test contents. Make sure the specified language actually exists.",
+                    );
+                    let mut new_test = Test::new(new_contents, !opt.no_backtrack, opt.sudden_death);
+                    new_test.scroll_mode = opt.scroll_mode;
+                    state = State::Test(new_test);
                 }
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('p'),
@@ -298,11 +306,10 @@ fn main() -> io::Result<()> {
                         .flat_map(|w| vec![w.clone(); 5])
                         .collect();
                     practice_words.shuffle(&mut thread_rng());
-                    state = State::Test(Test::new(
-                        practice_words,
-                        !opt.no_backtrack,
-                        opt.sudden_death,
-                    ));
+                    let mut practice_test =
+                        Test::new(practice_words, !opt.no_backtrack, opt.sudden_death);
+                    practice_test.scroll_mode = opt.scroll_mode;
+                    state = State::Test(practice_test);
                 }
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('q'),

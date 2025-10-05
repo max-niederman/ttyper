@@ -105,6 +105,9 @@ impl ThemedWidget for &Test {
             let mut lines: Vec<Line> = Vec::new();
             let mut current_line: Vec<Span> = Vec::new();
             let mut current_width = 0;
+            let mut current_word_line_index = 0;
+            let mut word_index = 0;
+
             for word in words {
                 let word_width: usize = word.iter().map(|s| s.width()).sum();
 
@@ -113,14 +116,33 @@ impl ThemedWidget for &Test {
                     lines.push(Line::from(current_line.clone()));
                     current_line.clear();
                     current_width = 0;
+
+                    // If we haven't found the current word yet, increment line index
+                    if word_index <= self.current_word {
+                        current_word_line_index += 1;
+                    }
                 }
 
                 current_line.extend(word);
                 current_width += word_width;
+                word_index += 1;
             }
             lines.push(Line::from(current_line));
 
-            lines
+            // Apply scrolling logic only if scroll_mode is enabled
+            if self.scroll_mode {
+                // Calculate visible area height (subtracting borders)
+                let visible_height = (chunks[1].height as usize).saturating_sub(2);
+
+                // Show window starting from current word's line
+                let start_line = current_word_line_index;
+                let end_line = std::cmp::min(start_line + visible_height, lines.len());
+
+                lines[start_line..end_line].to_vec()
+            } else {
+                // Traditional behavior - show all lines
+                lines
+            }
         };
         let target = Paragraph::new(target_lines).block(
             Block::default()

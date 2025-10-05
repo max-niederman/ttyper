@@ -50,17 +50,18 @@ scoop install ttyper
 For usage instructions, you can run `ttyper --help`:
 
 ```
-ttyper 1.5.0
+ttyper 1.6.0
 Terminal-based typing test.
 
 USAGE:
     ttyper [FLAGS] [OPTIONS] [contents]
 
 FLAGS:
-    -d, --debug             
+    -d, --debug
     -h, --help              Prints help information
         --list-languages    List installed languages
         --no-backtrack      Disable backtracking to completed words
+        --scroll-mode       Keep current word at top of display (useful for long texts)
         --sudden-death      Enable sudden death mode to restart on first error
     -V, --version           Prints version information
 
@@ -76,13 +77,14 @@ ARGS:
 
 ### examples
 
-| command                        |                             test contents |
-| :----------------------------- | ----------------------------------------: |
-| `ttyper`                       |   50 of the 200 most common english words |
-| `ttyper -w 100`                |  100 of the 200 most common English words |
-| `ttyper -w 100 -l english1000` | 100 of the 1000 most common English words |
-| `ttyper --language-file lang`  |      50 random words from the file `lang` |
-| `ttyper text.txt`              |  contents of `text.txt` split at newlines |
+| command                         |                             test contents |
+| :------------------------------ | ----------------------------------------: |
+| `ttyper`                        |   50 of the 200 most common english words |
+| `ttyper -w 100`                 |  100 of the 200 most common English words |
+| `ttyper -w 100 -l english1000`  | 100 of the 1000 most common English words |
+| `ttyper --language-file lang`   |      50 random words from the file `lang` |
+| `ttyper text.txt`               |  contents of `text.txt` split at newlines |
+| `ttyper text.txt --scroll-mode` |   keep current line at top for long texts |
 
 ## languages
 
@@ -121,6 +123,10 @@ The following languages are available by default:
 | `ukrainian`          |     100 most common Ukrainian words |
 
 Additional languages can be added by creating a file in `TTYPER_CONFIG_DIR/language` with a word on each line. On Linux, the config directory is `$HOME/.config/ttyper`; on Windows, it's `C:\Users\user\AppData\Roaming\ttyper`; and on macOS it's `$HOME/Library/Application Support/ttyper`.
+
+## scroll mode
+
+For long text files, use `--scroll-mode` to keep the current word at the top of the display. This prevents the current typing position from scrolling out of view in long documents.
 
 ## config
 
