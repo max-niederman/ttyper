@@ -68,6 +68,34 @@ impl Test {
         }
     }
 
+    /// Check if there's any meaningful progress in the test
+    pub fn has_progress(&self) -> bool {
+        self.current_word > 0 || !self.words[0].progress.is_empty()
+    }
+
+    /// Get the total number of characters typed so far
+    pub fn total_characters_typed(&self) -> usize {
+        self.words
+            .iter()
+            .take(self.current_word)
+            .map(|w| w.text.len())
+            .sum::<usize>()
+            + self
+                .words
+                .get(self.current_word)
+                .map_or(0, |w| w.progress.len())
+    }
+
+    /// Get the percentage of completion
+    pub fn completion_percentage(&self) -> f32 {
+        let total_chars: usize = self.words.iter().map(|w| w.text.len()).sum();
+        if total_chars == 0 {
+            0.0
+        } else {
+            (self.total_characters_typed() as f32 / total_chars as f32) * 100.0
+        }
+    }
+
     pub fn handle_key(&mut self, key: KeyEvent) {
         if key.kind != KeyEventKind::Press {
             return;

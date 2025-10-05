@@ -57,10 +57,12 @@ USAGE:
     ttyper [FLAGS] [OPTIONS] [contents]
 
 FLAGS:
+        --autosave          Enable autosave to resume typing progress
     -d, --debug
     -h, --help              Prints help information
         --list-languages    List installed languages
         --no-backtrack      Disable backtracking to completed words
+        --no-resume-prompt  Disable the prompt to resume from save file
         --scroll-mode       Keep current word at top of display (useful for long texts)
         --sudden-death      Enable sudden death mode to restart on first error
     -V, --version           Prints version information
@@ -77,56 +79,98 @@ ARGS:
 
 ### examples
 
-| command                         |                             test contents |
-| :------------------------------ | ----------------------------------------: |
-| `ttyper`                        |   50 of the 200 most common english words |
-| `ttyper -w 100`                 |  100 of the 200 most common English words |
-| `ttyper -w 100 -l english1000`  | 100 of the 1000 most common English words |
-| `ttyper --language-file lang`   |      50 random words from the file `lang` |
-| `ttyper text.txt`               |  contents of `text.txt` split at newlines |
-| `ttyper text.txt --scroll-mode` |   keep current line at top for long texts |
+| command                                         |                             test contents |
+| :---------------------------------------------- | ----------------------------------------: |
+| `ttyper`                                        |   50 of the 200 most common english words |
+| `ttyper -w 100`                                 |  100 of the 200 most common English words |
+| `ttyper -w 100 -l english1000`                  | 100 of the 1000 most common English words |
+| `ttyper --language-file lang`                   |      50 random words from the file `lang` |
+| `ttyper text.txt`                               |  contents of `text.txt` split at newlines |
+| `ttyper text.txt --scroll-mode`                 |   keep current line at top for long texts |
+| `ttyper text.txt --autosave`                    |       save progress and resume on restart |
+| `ttyper text.txt --autosave --no-resume-prompt` |                auto-resume without asking |
 
 ## languages
 
 The following languages are available by default:
 
-| name                 |                         description |
-| :------------------- | ----------------------------------: |
-| `c`                  |          The C programming language |
-| `csharp`             |         The C# programming language |
-| `english100`         |       100 most common English words |
-| `english200`         |       200 most common English words |
-| `english1000`        |      1000 most common English words |
-| `english-advanced`   |              Advanced English words |
-| `english-pirate`     |       50 pirate speak English words |
-| `french100`          |        100 most common French words |
-| `french200`          |        200 most common French words |
-| `french1000`         |       1000 most common French words |
-| `german`             |        207 most common German words |
-| `german1000`         |       1000 most common German words |
-| `german10000`        |      10000 most common German words |
-| `go`                 |         The Go programming language |
-| `html`               |           HyperText Markup Language |
-| `java`               |       The Java programming language |
-| `javascript`         | The Javascript programming language |
-| `norwegian`          |     200 most common Norwegian words |
-| `php`                |        The PHP programming language |
-| `portuguese`         |    100 most common Portuguese words |
-| `portuguese200`      |    200 most common Portuguese words |
-| `portuguese1000`     |   1000 most common Portuguese words |
-| `portuguese-advanced`|           Advanced Portuguese words |
-| `python`             |     The Python programming language |
-| `qt`                 |                The QT GUI framework |
-| `ruby`               |       The Ruby programming language |
-| `rust`               |       The Rust programming language |
-| `spanish`            |       100 most common Spanish words |
-| `ukrainian`          |     100 most common Ukrainian words |
+| name                  |                         description |
+| :-------------------- | ----------------------------------: |
+| `c`                   |          The C programming language |
+| `csharp`              |         The C# programming language |
+| `english100`          |       100 most common English words |
+| `english200`          |       200 most common English words |
+| `english1000`         |      1000 most common English words |
+| `english-advanced`    |              Advanced English words |
+| `english-pirate`      |       50 pirate speak English words |
+| `french100`           |        100 most common French words |
+| `french200`           |        200 most common French words |
+| `french1000`          |       1000 most common French words |
+| `german`              |        207 most common German words |
+| `german1000`          |       1000 most common German words |
+| `german10000`         |      10000 most common German words |
+| `go`                  |         The Go programming language |
+| `html`                |           HyperText Markup Language |
+| `java`                |       The Java programming language |
+| `javascript`          | The Javascript programming language |
+| `norwegian`           |     200 most common Norwegian words |
+| `php`                 |        The PHP programming language |
+| `portuguese`          |    100 most common Portuguese words |
+| `portuguese200`       |    200 most common Portuguese words |
+| `portuguese1000`      |   1000 most common Portuguese words |
+| `portuguese-advanced` |           Advanced Portuguese words |
+| `python`              |     The Python programming language |
+| `qt`                  |                The QT GUI framework |
+| `ruby`                |       The Ruby programming language |
+| `rust`                |       The Rust programming language |
+| `spanish`             |       100 most common Spanish words |
+| `ukrainian`           |     100 most common Ukrainian words |
 
 Additional languages can be added by creating a file in `TTYPER_CONFIG_DIR/language` with a word on each line. On Linux, the config directory is `$HOME/.config/ttyper`; on Windows, it's `C:\Users\user\AppData\Roaming\ttyper`; and on macOS it's `$HOME/Library/Application Support/ttyper`.
 
 ## scroll mode
 
 For long text files, use `--scroll-mode` to keep the current word at the top of the display. This prevents the current typing position from scrolling out of view in long documents.
+
+## autosave
+
+When working with longer text files, you can enable autosave functionality to save your typing progress and resume where you left off:
+
+```bash
+ttyper long_document.txt --autosave
+```
+
+This feature automatically:
+
+- Saves your typing progress every 5 seconds while you type
+- Detects when you restart with the same file
+- Prompts you to resume from where you left off
+- Cleans up save files when you complete a test
+
+### autosave options
+
+- `--autosave`: Enable automatic saving and resuming of typing progress
+- `--no-resume-prompt`: Skip the resume prompt and automatically continue from saved progress
+
+Save files are stored in your system's config directory under `saves/`:
+
+- **Linux/macOS**: `~/.config/ttyper/saves/`
+- **Windows**: `%APPDATA%\ttyper\saves\`
+
+### examples
+
+```bash
+# Enable autosave with resume prompt
+ttyper document.txt --autosave
+
+# Enable autosave and auto-resume without prompting
+ttyper document.txt --autosave --no-resume-prompt
+
+# Combine with scroll mode for long documents
+ttyper long_book.txt --autosave --scroll-mode
+```
+
+The save files are automatically cleaned up when you complete a typing test, so you don't need to manage them manually.
 
 ## config
 

@@ -1,15 +1,19 @@
 mod config;
+mod save;
 mod test;
 mod ui;
 
 use config::Config;
+use save::SaveManager;
 use test::{results::Results, Test};
 
 use clap::Parser;
 use crossterm::{
     self, cursor,
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    execute, terminal,
+    execute,
+    style::Print,
+    terminal,
 };
 use rand::{seq::SliceRandom, thread_rng};
 use ratatui::{backend::CrosstermBackend, terminal::Terminal};
@@ -68,6 +72,14 @@ struct Opt {
     /// Keep current word at top of display (useful for long texts)
     #[arg(long)]
     scroll_mode: bool,
+
+    /// Enable autosave to resume typing progress
+    #[arg(long)]
+    autosave: bool,
+
+    /// Disable the prompt to resume from save file
+    #[arg(long)]
+    no_resume_prompt: bool,
 }
 
 impl Opt {
@@ -201,6 +213,27 @@ impl State {
     }
 }
 
+/// Prompt user whether to resume from save file
+fn prompt_resume(file_path: &std::path::Path) -> io::Result<bool> {
+    execute!(
+        io::stdout(),
+        Print(format!(
+            "Found saved progress for {:?}\n",
+            file_path.file_name().unwrap_or_default()
+        )),
+        Print("Do you want to resume from where you left off? (y/N): ")
+    )?;
+
+    // Flush stdout to ensure prompt is displayed
+    use std::io::Write;
+    io::stdout().flush()?;
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+
+    Ok(input.trim().to_lowercase() == "y" || input.trim().to_lowercase() == "yes")
+}
+
 fn main() -> io::Result<()> {
     let opt = Opt::parse();
     if opt.debug {
@@ -227,6 +260,17 @@ fn main() -> io::Result<()> {
         .gen_contents()
         .expect("Couldn't get test contents. Make sure the specified language actually exists.");
 
+    let save_manager = if opt.autosave {
+        if opt.debug {
+            println!("Autosave enabled - progress will be saved automatically");
+        }
+        Some(SaveManager::new()?)
+    } else {
+        None
+    };
+
+    let input_file_path = opt.contents.as_ref();
+
     terminal::enable_raw_mode()?;
     execute!(
         io::stdout(),
@@ -239,10 +283,44 @@ fn main() -> io::Result<()> {
     let mut state = State::Test({
         let mut test = Test::new(contents.clone(), !opt.no_backtrack, opt.sudden_death);
         test.scroll_mode = opt.scroll_mode;
+
+        // Check for save file and prompt user to resume
+        if let (Some(save_mgr), Some(file_path)) = (&save_manager, input_file_path) {
+            if let Some(save_state) = save_mgr.load_save_state(file_path) {
+                let should_resume = if !opt.no_resume_prompt {
+                    // Temporarily restore terminal to show prompt
+                    terminal::disable_raw_mode()?;
+                    execute!(io::stdout(), cursor::Show, terminal::LeaveAlternateScreen,)?;
+
+                    let resume = prompt_resume(file_path)?;
+
+                    // Re-enable raw mode and alternate screen
+                    terminal::enable_raw_mode()?;
+                    execute!(
+                        io::stdout(),
+                        cursor::Hide,
+                        cursor::SavePosition,
+                        terminal::EnterAlternateScreen,
+                    )?;
+                    terminal.clear()?;
+                    resume
+                } else {
+                    true
+                };
+
+                if should_resume {
+                    save_state.apply_to_test(&mut test);
+                }
+            }
+        }
+
         test
     });
 
     state.render_into(&mut terminal, &config)?;
+    let mut last_save_time = std::time::Instant::now();
+    let save_interval = std::time::Duration::from_secs(5); // Autosave every 5 seconds
+
     loop {
         let event = event::read()?;
 
@@ -272,7 +350,22 @@ fn main() -> io::Result<()> {
             State::Test(ref mut test) => {
                 if let Event::Key(key) = event {
                     test.handle_key(key);
+
+                    // Autosave progress
+                    if let (Some(save_mgr), Some(file_path)) = (&save_manager, input_file_path) {
+                        let now = std::time::Instant::now();
+                        if now.duration_since(last_save_time) >= save_interval {
+                            let _ = save_mgr.save_test(test, file_path);
+                            last_save_time = now;
+                        }
+                    }
+
                     if test.complete {
+                        // Delete save file when test is completed
+                        if let (Some(save_mgr), Some(file_path)) = (&save_manager, input_file_path)
+                        {
+                            let _ = save_mgr.delete_save(file_path);
+                        }
                         state = State::Results(Results::from(&*test));
                     }
                 }
@@ -322,6 +415,15 @@ fn main() -> io::Result<()> {
         }
 
         state.render_into(&mut terminal, &config)?;
+    }
+
+    // Save final state before exiting if we're in the middle of a test
+    if let (Some(save_mgr), Some(file_path), State::Test(ref test)) =
+        (&save_manager, input_file_path, &state)
+    {
+        if !test.complete && test.current_word > 0 {
+            let _ = save_mgr.save_test(test, file_path);
+        }
     }
 
     terminal::disable_raw_mode()?;
