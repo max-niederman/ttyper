@@ -213,7 +213,7 @@ impl State {
     }
 }
 
-/// Prompt user whether to resume from save file
+/// Prompt user whether to resume from save file (simple yes/no)
 fn prompt_resume(file_path: &std::path::Path) -> io::Result<bool> {
     execute!(
         io::stdout(),
@@ -231,7 +231,25 @@ fn prompt_resume(file_path: &std::path::Path) -> io::Result<bool> {
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
 
-    Ok(input.trim().to_lowercase() == "y" || input.trim().to_lowercase() == "yes")
+    Ok(input.trim().eq_ignore_ascii_case("y") || input.trim().eq_ignore_ascii_case("yes"))
+}
+
+/// Prompt the user to enter a name for a new save. Returns None if the user cancels.
+fn prompt_input_name() -> io::Result<Option<String>> {
+    use std::io::Write;
+    write!(
+        io::stdout(),
+        "Enter a name for the new save (leave empty to cancel): "
+    )?;
+    io::stdout().flush()?;
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    let s = input.trim().to_string();
+    if s.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(s))
+    }
 }
 
 fn main() -> io::Result<()> {
@@ -280,19 +298,111 @@ fn main() -> io::Result<()> {
     )?;
     terminal.clear()?;
 
+    // Track which save file (if any) we should use for autosave / deletion.
+    let mut active_save_path: Option<PathBuf> = None;
+
     let mut state = State::Test({
         let mut test = Test::new(contents.clone(), !opt.no_backtrack, opt.sudden_death);
         test.scroll_mode = opt.scroll_mode;
 
-        // Check for save file and prompt user to resume
+        // Check for save file(s) and prompt user to resume
         if let (Some(save_mgr), Some(file_path)) = (&save_manager, input_file_path) {
-            if let Some(save_state) = save_mgr.load_save_state(file_path) {
-                let should_resume = if !opt.no_resume_prompt {
+            // Load all saves related to this file (sorted oldest -> newest)
+            let saves = save_mgr.load_all_save_states(file_path).unwrap_or_default();
+
+            if !saves.is_empty() {
+                let mut chosen_save_path: Option<PathBuf> = None;
+
+                if !opt.no_resume_prompt {
                     // Temporarily restore terminal to show prompt
                     terminal::disable_raw_mode()?;
                     execute!(io::stdout(), cursor::Show, terminal::LeaveAlternateScreen,)?;
 
-                    let resume = prompt_resume(file_path)?;
+                    if saves.len() == 1 {
+                        // Single save: behave like previous prompt, but offer to create a new-named save when the user says no.
+                        let (ref path, ref state) = &saves[0];
+                        let resume = prompt_resume(path)?;
+                        if resume {
+                            state.apply_to_test(&mut test);
+                            chosen_save_path = Some(path.clone());
+                        } else {
+                            // Ask if the user would like to save under a new name instead of overwriting
+                            use std::io::Write;
+                            write!(
+                                io::stdout(),
+                                "\nWould you like to save your progress under a new name? (y/N): "
+                            )?;
+                            io::stdout().flush()?;
+                            let mut yn = String::new();
+                            io::stdin().read_line(&mut yn)?;
+                            if yn.trim().eq_ignore_ascii_case("y")
+                                || yn.trim().eq_ignore_ascii_case("yes")
+                            {
+                                if let Some(name) = prompt_input_name()? {
+                                    let new_path =
+                                        save_mgr.save_test_to_name(&test, file_path, &name)?;
+                                    chosen_save_path = Some(new_path);
+                                    writeln!(
+                                        io::stdout(),
+                                        "Saved progress to {:?}",
+                                        chosen_save_path
+                                            .as_ref()
+                                            .and_then(|p| p.file_name())
+                                            .unwrap_or_default()
+                                    )?;
+                                }
+                            }
+                        }
+                    } else {
+                        // Multiple saves: let the user pick one, create a new named save, or skip.
+                        writeln!(
+                            io::stdout(),
+                            "Found multiple saved progress files for {:?}:",
+                            file_path.file_name().unwrap_or_default()
+                        )?;
+                        for (i, (p, s)) in saves.iter().enumerate() {
+                            let name = p
+                                .file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or("<unknown>");
+                            writeln!(
+                                io::stdout(),
+                                "  {}) {} (saved at {})",
+                                i + 1,
+                                name,
+                                s.timestamp
+                            )?;
+                        }
+                        use std::io::Write;
+                        write!(io::stdout(), "Enter a number to resume, 'n' to create a new save, or Enter to continue without loading: ")?;
+                        io::stdout().flush()?;
+                        let mut input = String::new();
+                        io::stdin().read_line(&mut input)?;
+                        let trimmed = input.trim();
+                        if trimmed.is_empty() {
+                            // continue without loading
+                        } else if trimmed.eq_ignore_ascii_case("n") {
+                            if let Some(name) = prompt_input_name()? {
+                                let new_path =
+                                    save_mgr.save_test_to_name(&test, file_path, &name)?;
+                                chosen_save_path = Some(new_path);
+                                writeln!(
+                                    io::stdout(),
+                                    "Saved progress to {:?}",
+                                    chosen_save_path
+                                        .as_ref()
+                                        .and_then(|p| p.file_name())
+                                        .unwrap_or_default()
+                                )?;
+                            }
+                        } else if let Ok(idx) = trimmed.parse::<usize>() {
+                            if idx >= 1 && idx <= saves.len() {
+                                let (ref path, ref state) = &saves[idx - 1];
+                                state.apply_to_test(&mut test);
+                                chosen_save_path = Some(path.clone());
+                            }
+                        }
+                    }
 
                     // Re-enable raw mode and alternate screen
                     terminal::enable_raw_mode()?;
@@ -303,13 +413,15 @@ fn main() -> io::Result<()> {
                         terminal::EnterAlternateScreen,
                     )?;
                     terminal.clear()?;
-                    resume
                 } else {
-                    true
+                    // No prompt: auto-resume using the most recent save
+                    let last = saves.last().unwrap();
+                    last.1.apply_to_test(&mut test);
+                    chosen_save_path = Some(last.0.clone());
                 };
 
-                if should_resume {
-                    save_state.apply_to_test(&mut test);
+                if let Some(p) = chosen_save_path {
+                    active_save_path = Some(p);
                 }
             }
         }
@@ -352,19 +464,34 @@ fn main() -> io::Result<()> {
                     test.handle_key(key);
 
                     // Autosave progress
-                    if let (Some(save_mgr), Some(file_path)) = (&save_manager, input_file_path) {
+                    if let Some(save_mgr) = &save_manager {
                         let now = std::time::Instant::now();
                         if now.duration_since(last_save_time) >= save_interval {
-                            let _ = save_mgr.save_test(test, file_path);
+                            if let Some(file_path) = input_file_path {
+                                if let Some(ref chosen) = active_save_path {
+                                    // Save to the chosen save file (do not overwrite other saves)
+                                    let _ = save_mgr.save_test_to_path(test, file_path, chosen);
+                                } else {
+                                    // Default behaviour: overwrite single default save file
+                                    let _ = save_mgr.save_test(test, file_path);
+                                }
+                            }
                             last_save_time = now;
                         }
                     }
 
                     if test.complete {
                         // Delete save file when test is completed
-                        if let (Some(save_mgr), Some(file_path)) = (&save_manager, input_file_path)
-                        {
-                            let _ = save_mgr.delete_save(file_path);
+                        if let Some(save_mgr) = &save_manager {
+                            if let Some(file_path) = input_file_path {
+                                if let Some(ref chosen) = active_save_path {
+                                    // Delete the specific save file that was used
+                                    let _ = save_mgr.delete_save_by_path(chosen);
+                                } else {
+                                    // Default behaviour: delete all saves related to this file
+                                    let _ = save_mgr.delete_save(file_path);
+                                }
+                            }
                         }
                         state = State::Results(Results::from(&*test));
                     }

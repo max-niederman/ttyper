@@ -83,14 +83,14 @@ impl SaveState {
         Ok(hash)
     }
 
-    /// Check if the saved state is still valid for the given file
-    pub fn is_valid_for_file(&self, file_path: &Path) -> bool {
-        if let Ok(current_hash) = Self::calculate_file_hash(file_path) {
-            self.file_hash == current_hash && self.file_path == file_path
-        } else {
-            false
-        }
-    }
+    // /// Check if the saved state is still valid for the given file
+    // pub fn is_valid_for_file(&self, file_path: &Path) -> bool {
+    //     if let Ok(current_hash) = Self::calculate_file_hash(file_path) {
+    //         self.file_hash == current_hash && self.file_path == file_path
+    //     } else {
+    //         false
+    //     }
+    // }
 }
 
 pub struct SaveManager {
@@ -110,7 +110,18 @@ impl SaveManager {
         Ok(SaveManager { save_dir })
     }
 
-    /// Get the save file path for a given input file
+    /// Sanitize a string to be safe for filenames
+    fn sanitize_name(input: &str) -> String {
+        input
+            .chars()
+            .map(|c| match c {
+                '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
+                other => other,
+            })
+            .collect()
+    }
+
+    /// Get the default save file path for a given input file (backwards compatible)
     fn get_save_file_path(&self, file_path: &Path) -> PathBuf {
         let file_name = file_path
             .file_name()
@@ -129,40 +140,128 @@ impl SaveManager {
         self.save_dir.join(safe_name)
     }
 
-    /// Save the current test state
-    pub fn save_test(&self, test: &Test, file_path: &Path) -> io::Result<()> {
+    /// Get a save file path for a given input file with a custom name.
+    /// This allows creating alternative save files when the user declines to resume.
+    fn get_save_file_path_with_name(&self, file_path: &Path, name: &str) -> PathBuf {
+        let base = file_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("unknown");
+        let safe_base = Self::sanitize_name(base);
+        let safe_name = Self::sanitize_name(name);
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let filename = format!("{}_{}_{}.json", safe_base, safe_name, timestamp);
+        self.save_dir.join(filename)
+    }
+
+    /// Save the current test state to the default save path (backwards compatible)
+    pub fn save_test(&self, test: &Test, file_path: &Path) -> io::Result<PathBuf> {
         let save_state = SaveState::from_test(test, file_path)?;
         let save_file_path = self.get_save_file_path(file_path);
 
         let json = serde_json::to_string_pretty(&save_state)?;
-        fs::write(save_file_path, json)?;
+        fs::write(&save_file_path, json)?;
 
+        Ok(save_file_path)
+    }
+
+    /// Save the current test state to a specific named save file.
+    /// Returns the path written to so callers can inform the user.
+    pub fn save_test_to_name(
+        &self,
+        test: &Test,
+        file_path: &Path,
+        name: &str,
+    ) -> io::Result<PathBuf> {
+        let save_state = SaveState::from_test(test, file_path)?;
+        let save_file_path = self.get_save_file_path_with_name(file_path, name);
+
+        let json = serde_json::to_string_pretty(&save_state)?;
+        fs::write(&save_file_path, json)?;
+
+        Ok(save_file_path)
+    }
+
+    /// List all save files in the saves directory that reference `file_path` and are parseable.
+    /// Returns a vector of (save_file_path, SaveState).
+    pub fn list_save_states(&self, file_path: &Path) -> io::Result<Vec<(PathBuf, SaveState)>> {
+        let mut results = Vec::new();
+        let entries = fs::read_dir(&self.save_dir)?;
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                continue;
+            }
+
+            if let Ok(json) = fs::read_to_string(&path) {
+                if let Ok(state) = serde_json::from_str::<SaveState>(&json) {
+                    // Only return saves that match the target file path (exact)
+                    if state.file_path == file_path {
+                        results.push((path, state));
+                    }
+                } else {
+                    // If the file cannot be parsed, try removing it (cleanup)
+                    let _ = fs::remove_file(&path);
+                }
+            }
+        }
+
+        Ok(results)
+    }
+
+    // /// Load the most appropriate save state for `file_path`.
+    // /// If multiple saves are present, returns the one with the newest timestamp.
+    // /// Invalid/unparseable saves are cleaned up.
+    // pub fn load_save_state(&self, file_path: &Path) -> Option<SaveState> {
+    //     match self.list_save_states(file_path) {
+    //         Ok(mut list) if !list.is_empty() => {
+    //             // Choose the SaveState with the largest timestamp (most recent)
+    //             list.sort_by_key(|(_, s)| s.timestamp);
+    //             let (_path, state) = list.pop().unwrap();
+    //             Some(state)
+    //         }
+    //         _ => None,
+    //     }
+    // }
+
+    /// Load all valid save states for a given file path.
+    /// This lets callers (e.g. the UI) present choices to the user when multiple saves exist.
+    pub fn load_all_save_states(&self, file_path: &Path) -> io::Result<Vec<(PathBuf, SaveState)>> {
+        let mut states = self.list_save_states(file_path)?;
+        // sort oldest -> newest
+        states.sort_by_key(|(_, s)| s.timestamp);
+        Ok(states)
+    }
+
+    /// Delete save files for a given input file (deletes all matching saves).
+    pub fn delete_save(&self, file_path: &Path) -> io::Result<()> {
+        let saves = self.list_save_states(file_path)?;
+        for (path, _) in saves {
+            if path.exists() {
+                let _ = fs::remove_file(path);
+            }
+        }
         Ok(())
     }
 
-    /// Load saved state for a file if it exists and is valid
-    pub fn load_save_state(&self, file_path: &Path) -> Option<SaveState> {
-        let save_file_path = self.get_save_file_path(file_path);
-
-        if !save_file_path.exists() {
-            return None;
-        }
-
-        let json = fs::read_to_string(save_file_path).ok()?;
-        let save_state: SaveState = serde_json::from_str(&json).ok()?;
-
-        if save_state.is_valid_for_file(file_path) {
-            Some(save_state)
-        } else {
-            // Remove invalid save file
-            let _ = fs::remove_file(self.get_save_file_path(file_path));
-            None
-        }
+    /// Save the current test state to an explicit path (useful when user selected a specific save file)
+    pub fn save_test_to_path(
+        &self,
+        test: &Test,
+        file_path: &Path,
+        save_file_path: &Path,
+    ) -> io::Result<()> {
+        let save_state = SaveState::from_test(test, file_path)?;
+        let json = serde_json::to_string_pretty(&save_state)?;
+        fs::write(save_file_path, json)?;
+        Ok(())
     }
 
-    /// Delete save file for a given input file
-    pub fn delete_save(&self, file_path: &Path) -> io::Result<()> {
-        let save_file_path = self.get_save_file_path(file_path);
+    /// Delete a specific save file by path
+    pub fn delete_save_by_path(&self, save_file_path: &Path) -> io::Result<()> {
         if save_file_path.exists() {
             fs::remove_file(save_file_path)?;
         }
