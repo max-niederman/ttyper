@@ -1,3 +1,16 @@
+/*
+ttyper/src/main.rs
+
+Main entry point for ttyper with updated save/resume/delete prompt loop.
+
+This file was rebuilt to ensure that when the user deletes a save during the
+multiple-save prompt, the program returns to the save-choices prompt (instead
+of continuing to start the test). The user can delete multiple saves in a row,
+choose a save to resume, create a new named save, or continue without loading.
+
+Note: this file is the full source for the main binary.
+*/
+
 mod config;
 mod save;
 mod test;
@@ -308,7 +321,7 @@ fn main() -> io::Result<()> {
         // Check for save file(s) and prompt user to resume
         if let (Some(save_mgr), Some(file_path)) = (&save_manager, input_file_path) {
             // Load all saves related to this file (sorted oldest -> newest)
-            let saves = save_mgr.load_all_save_states(file_path).unwrap_or_default();
+            let mut saves = save_mgr.load_all_save_states(file_path).unwrap_or_default();
 
             if !saves.is_empty() {
                 let mut chosen_save_path: Option<PathBuf> = None;
@@ -318,91 +331,171 @@ fn main() -> io::Result<()> {
                     terminal::disable_raw_mode()?;
                     execute!(io::stdout(), cursor::Show, terminal::LeaveAlternateScreen,)?;
 
-                    if saves.len() == 1 {
-                        // Single save: behave like previous prompt, but offer to create a new-named save when the user says no.
-                        let (ref path, ref state) = &saves[0];
-                        let resume = prompt_resume(path)?;
-                        if resume {
-                            state.apply_to_test(&mut test);
-                            chosen_save_path = Some(path.clone());
+                    // Loop the prompt so that deletion returns to the choices instead of starting the test.
+                    loop {
+                        // If all saves have been deleted, stop prompting.
+                        if saves.is_empty() {
+                            break;
+                        }
+
+                        if saves.len() == 1 {
+                            // Single save: behave like previous prompt, but offer to create a new-named save when the user says no.
+                            let (ref path, ref state_saved) = &saves[0];
+                            let resume = prompt_resume(path)?;
+                            if resume {
+                                state_saved.apply_to_test(&mut test);
+                                chosen_save_path = Some(path.clone());
+                                break;
+                            } else {
+                                // Ask if the user would like to save under a new name instead of overwriting
+                                use std::io::Write;
+                                write!(
+                                    io::stdout(),
+                                    "\nWould you like to save your progress under a new name? (y/N): "
+                                )?;
+                                io::stdout().flush()?;
+                                let mut yn = String::new();
+                                io::stdin().read_line(&mut yn)?;
+                                if yn.trim().eq_ignore_ascii_case("y")
+                                    || yn.trim().eq_ignore_ascii_case("yes")
+                                {
+                                    if let Some(name) = prompt_input_name()? {
+                                        let new_path =
+                                            save_mgr.save_test_to_name(&test, file_path, &name)?;
+                                        chosen_save_path = Some(new_path);
+                                        writeln!(
+                                            io::stdout(),
+                                            "Saved progress to {}",
+                                            chosen_save_path
+                                                .as_ref()
+                                                .and_then(|p| p.file_name())
+                                                .map(|n| n.to_string_lossy())
+                                                .unwrap_or_else(|| std::borrow::Cow::Borrowed(
+                                                    "<unknown>"
+                                                ))
+                                        )?;
+                                    }
+                                }
+                                // After this single-save branch, regardless of save/no-save,
+                                // return to calling code (do not loop infinitely on single save).
+                                break;
+                            }
                         } else {
-                            // Ask if the user would like to save under a new name instead of overwriting
+                            // Multiple saves: let the user pick one, create a new named save, delete saves, or skip.
+                            writeln!(
+                                io::stdout(),
+                                "Found multiple saved progress files for {}:",
+                                file_path
+                                    .file_name()
+                                    .and_then(|n| n.to_str())
+                                    .unwrap_or("<unknown>")
+                            )?;
+                            for (i, (p, s)) in saves.iter().enumerate() {
+                                let name = p
+                                    .file_name()
+                                    .and_then(|n| n.to_str())
+                                    .unwrap_or("<unknown>");
+                                writeln!(
+                                    io::stdout(),
+                                    "  {}) {} (saved at {})",
+                                    i + 1,
+                                    name,
+                                    s.timestamp
+                                )?;
+                            }
                             use std::io::Write;
                             write!(
                                 io::stdout(),
-                                "\nWould you like to save your progress under a new name? (y/N): "
+                                "Enter a number to resume, 'n' to create a new save, 'dN' to delete save N (e.g. d2), or Enter to continue without loading: "
                             )?;
                             io::stdout().flush()?;
-                            let mut yn = String::new();
-                            io::stdin().read_line(&mut yn)?;
-                            if yn.trim().eq_ignore_ascii_case("y")
-                                || yn.trim().eq_ignore_ascii_case("yes")
-                            {
+                            let mut input = String::new();
+                            io::stdin().read_line(&mut input)?;
+                            let trimmed = input.trim();
+                            if trimmed.is_empty() {
+                                // user chose to continue without loading
+                                break;
+                            } else if trimmed.eq_ignore_ascii_case("n") {
                                 if let Some(name) = prompt_input_name()? {
                                     let new_path =
                                         save_mgr.save_test_to_name(&test, file_path, &name)?;
                                     chosen_save_path = Some(new_path);
                                     writeln!(
                                         io::stdout(),
-                                        "Saved progress to {:?}",
+                                        "Saved progress to {}",
                                         chosen_save_path
                                             .as_ref()
                                             .and_then(|p| p.file_name())
-                                            .unwrap_or_default()
+                                            .map(|n| n.to_string_lossy())
+                                            .unwrap_or_else(|| std::borrow::Cow::Borrowed(
+                                                "<unknown>"
+                                            ))
                                     )?;
+                                    break;
+                                } else {
+                                    // user canceled naming; loop back to choices
+                                    continue;
                                 }
+                            } else if trimmed.starts_with('d') || trimmed.starts_with('D') {
+                                // Attempt to parse a deletion command like "d2" or "d 2"
+                                let rest = trimmed[1..].trim();
+                                if let Ok(idx) = rest.parse::<usize>() {
+                                    if idx >= 1 && idx <= saves.len() {
+                                        let (ref path, _) = &saves[idx - 1];
+                                        // Confirm deletion
+                                        use std::io::Write;
+                                        write!(
+                                            io::stdout(),
+                                            "Delete save {}? (y/N): ",
+                                            path.file_name()
+                                                .map(|n| n.to_string_lossy())
+                                                .unwrap_or_else(|| std::borrow::Cow::Borrowed(
+                                                    "<unknown>"
+                                                ))
+                                        )?;
+                                        io::stdout().flush()?;
+                                        let mut conf = String::new();
+                                        io::stdin().read_line(&mut conf)?;
+                                        if conf.trim().eq_ignore_ascii_case("y")
+                                            || conf.trim().eq_ignore_ascii_case("yes")
+                                        {
+                                            let _ = save_mgr.delete_save_by_path(path);
+                                            // remove from the local list so subsequent loop sees updated list
+                                            saves.remove(idx - 1);
+                                            writeln!(io::stdout(), "Deleted save.")?;
+                                            // Return to top of loop and re-display remaining saves.
+                                            continue;
+                                        } else {
+                                            // user canceled deletion; re-display choices
+                                            continue;
+                                        }
+                                    } else {
+                                        // invalid index; re-display list
+                                        writeln!(io::stdout(), "Invalid save number.")?;
+                                        continue;
+                                    }
+                                } else {
+                                    // couldn't parse number; re-display list
+                                    writeln!(io::stdout(), "Invalid delete command.")?;
+                                    continue;
+                                }
+                            } else if let Ok(idx) = trimmed.parse::<usize>() {
+                                if idx >= 1 && idx <= saves.len() {
+                                    let (ref path, ref state_saved) = &saves[idx - 1];
+                                    state_saved.apply_to_test(&mut test);
+                                    chosen_save_path = Some(path.clone());
+                                    break;
+                                } else {
+                                    writeln!(io::stdout(), "Invalid save number.")?;
+                                    continue;
+                                }
+                            } else {
+                                // unknown input; re-display
+                                writeln!(io::stdout(), "Unrecognized input.")?;
+                                continue;
                             }
                         }
-                    } else {
-                        // Multiple saves: let the user pick one, create a new named save, or skip.
-                        writeln!(
-                            io::stdout(),
-                            "Found multiple saved progress files for {:?}:",
-                            file_path.file_name().unwrap_or_default()
-                        )?;
-                        for (i, (p, s)) in saves.iter().enumerate() {
-                            let name = p
-                                .file_name()
-                                .and_then(|n| n.to_str())
-                                .unwrap_or("<unknown>");
-                            writeln!(
-                                io::stdout(),
-                                "  {}) {} (saved at {})",
-                                i + 1,
-                                name,
-                                s.timestamp
-                            )?;
-                        }
-                        use std::io::Write;
-                        write!(io::stdout(), "Enter a number to resume, 'n' to create a new save, or Enter to continue without loading: ")?;
-                        io::stdout().flush()?;
-                        let mut input = String::new();
-                        io::stdin().read_line(&mut input)?;
-                        let trimmed = input.trim();
-                        if trimmed.is_empty() {
-                            // continue without loading
-                        } else if trimmed.eq_ignore_ascii_case("n") {
-                            if let Some(name) = prompt_input_name()? {
-                                let new_path =
-                                    save_mgr.save_test_to_name(&test, file_path, &name)?;
-                                chosen_save_path = Some(new_path);
-                                writeln!(
-                                    io::stdout(),
-                                    "Saved progress to {:?}",
-                                    chosen_save_path
-                                        .as_ref()
-                                        .and_then(|p| p.file_name())
-                                        .unwrap_or_default()
-                                )?;
-                            }
-                        } else if let Ok(idx) = trimmed.parse::<usize>() {
-                            if idx >= 1 && idx <= saves.len() {
-                                let (ref path, ref state) = &saves[idx - 1];
-                                state.apply_to_test(&mut test);
-                                chosen_save_path = Some(path.clone());
-                            }
-                        }
-                    }
+                    } // end loop
 
                     // Re-enable raw mode and alternate screen
                     terminal::enable_raw_mode()?;
