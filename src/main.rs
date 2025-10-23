@@ -38,6 +38,7 @@ use std::{
     num,
     path::PathBuf,
     str,
+    time::Duration,
 };
 
 #[derive(RustEmbed)]
@@ -527,111 +528,134 @@ fn main() -> io::Result<()> {
     let save_interval = std::time::Duration::from_secs(5); // Autosave every 5 seconds
 
     loop {
-        let event = event::read()?;
-
-        // handle exit controls
-        match event {
-            Event::Key(KeyEvent {
-                code: KeyCode::Char('c'),
-                kind: KeyEventKind::Press,
-                modifiers: KeyModifiers::CONTROL,
-                ..
-            }) => break,
-            Event::Key(KeyEvent {
-                code: KeyCode::Esc,
-                kind: KeyEventKind::Press,
-                modifiers: KeyModifiers::NONE,
-                ..
-            }) => match state {
-                State::Test(ref test) => {
-                    state = State::Results(Results::from(test));
-                }
-                State::Results(_) => break,
-            },
-            _ => {}
+        if let State::Test(ref mut test) = state {
+            test.update_duration();
         }
 
-        match state {
-            State::Test(ref mut test) => {
-                if let Event::Key(key) = event {
-                    test.handle_key(key);
+        let timeout = Duration::from_millis(1000);
+        if event::poll(timeout)? {
+            let event = event::read()?;
 
-                    // Autosave progress
-                    if let Some(save_mgr) = &save_manager {
-                        let now = std::time::Instant::now();
-                        if now.duration_since(last_save_time) >= save_interval {
-                            if let Some(file_path) = input_file_path {
-                                if let Some(ref chosen) = active_save_path {
-                                    // Save to the chosen save file (do not overwrite other saves)
-                                    let _ = save_mgr.save_test_to_path(test, file_path, chosen);
-                                } else {
-                                    // Default behaviour: overwrite single default save file
-                                    let _ = save_mgr.save_test(test, file_path);
-                                }
-                            }
-                            last_save_time = now;
-                        }
-                    }
-
-                    if test.complete {
-                        // Delete save file when test is completed
-                        if let Some(save_mgr) = &save_manager {
-                            if let Some(file_path) = input_file_path {
-                                if let Some(ref chosen) = active_save_path {
-                                    // Delete the specific save file that was used
-                                    let _ = save_mgr.delete_save_by_path(chosen);
-                                } else {
-                                    // Default behaviour: delete all saves related to this file
-                                    let _ = save_mgr.delete_save(file_path);
-                                }
-                            }
-                        }
-                        state = State::Results(Results::from(&*test));
-                    }
-                }
-            }
-            State::Results(ref result) => match event {
+            // handle exit controls
+            match event {
                 Event::Key(KeyEvent {
-                    code: KeyCode::Char('r'),
+                    code: KeyCode::Char('c'),
                     kind: KeyEventKind::Press,
-                    modifiers: KeyModifiers::NONE,
-                    ..
-                }) => {
-                    let new_contents = opt.gen_contents().expect(
-                        "Couldn't get test contents. Make sure the specified language actually exists.",
-                    );
-                    let mut new_test = Test::new(new_contents, !opt.no_backtrack, opt.sudden_death);
-                    new_test.scroll_mode = opt.scroll_mode;
-                    state = State::Test(new_test);
-                }
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char('p'),
-                    kind: KeyEventKind::Press,
-                    modifiers: KeyModifiers::NONE,
-                    ..
-                }) => {
-                    if result.missed_words.is_empty() {
-                        continue;
-                    }
-                    // repeat each missed word 5 times
-                    let mut practice_words: Vec<String> = (result.missed_words)
-                        .iter()
-                        .flat_map(|w| vec![w.clone(); 5])
-                        .collect();
-                    practice_words.shuffle(&mut thread_rng());
-                    let mut practice_test =
-                        Test::new(practice_words, !opt.no_backtrack, opt.sudden_death);
-                    practice_test.scroll_mode = opt.scroll_mode;
-                    state = State::Test(practice_test);
-                }
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char('q'),
-                    kind: KeyEventKind::Press,
-                    modifiers: KeyModifiers::NONE,
+                    modifiers: KeyModifiers::CONTROL,
                     ..
                 }) => break,
+                Event::Key(KeyEvent {
+                    code: KeyCode::Esc,
+                    kind: KeyEventKind::Press,
+                    modifiers: KeyModifiers::NONE,
+                    ..
+                }) => match state {
+                    State::Test(ref mut test) => {
+                        if let (Some(save_mgr), Some(file_path)) = (&save_manager, input_file_path)
+                        {
+                            if let Some(ref chosen) = active_save_path {
+                                let _ = save_mgr.save_test_to_path(test, file_path, chosen);
+                            } else {
+                                let _ = save_mgr.save_test(test, file_path);
+                            }
+                        }
+                        test.set_timer_active(false);
+                        state = State::Results(Results::from(&*test));
+                    }
+                    State::Results(_) => break,
+                },
                 _ => {}
-            },
+            }
+
+            match state {
+                State::Test(ref mut test) => {
+                    if let Event::Key(key) = event {
+                        test.set_timer_active(true);
+                        test.handle_key(key);
+
+                        // Autosave progress
+                        if let Some(save_mgr) = &save_manager {
+                            let now = std::time::Instant::now();
+                            if now.duration_since(last_save_time) >= save_interval {
+                                if let Some(file_path) = input_file_path {
+                                    if let Some(ref chosen) = active_save_path {
+                                        // Save to the chosen save file (do not overwrite other saves)
+                                        let _ = save_mgr.save_test_to_path(test, file_path, chosen);
+                                    } else {
+                                        // Default behaviour: overwrite single default save file
+                                        let _ = save_mgr.save_test(test, file_path);
+                                    }
+                                }
+                                last_save_time = now;
+                            }
+                        }
+
+                        if test.complete {
+                            test.set_timer_active(false);
+                            // Delete save file when test is completed
+                            if let Some(save_mgr) = &save_manager {
+                                if let Some(file_path) = input_file_path {
+                                    if let Some(ref chosen) = active_save_path {
+                                        // Delete the specific save file that was used
+                                        let _ = save_mgr.delete_save_by_path(chosen);
+                                    } else {
+                                        // Default behaviour: delete all saves related to this file
+                                        let _ = save_mgr.delete_save(file_path);
+                                    }
+                                }
+                            }
+                            state = State::Results(Results::from(&*test));
+                        }
+                    }
+                }
+                State::Results(ref result) => match event {
+                    Event::Key(KeyEvent {
+                        code: KeyCode::Char('r'),
+                        kind: KeyEventKind::Press,
+                        modifiers: KeyModifiers::NONE,
+                        ..
+                    }) => {
+                        let new_contents = opt.gen_contents().expect(
+                        "Couldn't get test contents. Make sure the specified language actually exists.",
+                    );
+                        let mut new_test =
+                            Test::new(new_contents, !opt.no_backtrack, opt.sudden_death);
+                        new_test.scroll_mode = opt.scroll_mode;
+                        state = State::Test(new_test);
+                    }
+                    Event::Key(KeyEvent {
+                        code: KeyCode::Char('p'),
+                        kind: KeyEventKind::Press,
+                        modifiers: KeyModifiers::NONE,
+                        ..
+                    }) => {
+                        if result.missed_words.is_empty() {
+                            continue;
+                        }
+                        // repeat each missed word 5 times
+                        let mut practice_words: Vec<String> = (result.missed_words)
+                            .iter()
+                            .flat_map(|w| vec![w.clone(); 5])
+                            .collect();
+                        practice_words.shuffle(&mut thread_rng());
+                        let mut practice_test =
+                            Test::new(practice_words, !opt.no_backtrack, opt.sudden_death);
+                        practice_test.scroll_mode = opt.scroll_mode;
+                        state = State::Test(practice_test);
+                    }
+                    Event::Key(KeyEvent {
+                        code: KeyCode::Char('q'),
+                        kind: KeyEventKind::Press,
+                        modifiers: KeyModifiers::NONE,
+                        ..
+                    }) => break,
+                    _ => {}
+                },
+            }
+        } else {
+            if let State::Test(ref mut test) = state {
+                test.set_timer_active(false);
+            }
         }
 
         state.render_into(&mut terminal, &config)?;
@@ -641,8 +665,12 @@ fn main() -> io::Result<()> {
     if let (Some(save_mgr), Some(file_path), State::Test(ref test)) =
         (&save_manager, input_file_path, &state)
     {
-        if !test.complete && test.current_word > 0 {
-            let _ = save_mgr.save_test(test, file_path);
+        if test.current_word > 0 {
+            if let Some(ref chosen) = active_save_path {
+                let _ = save_mgr.save_test_to_path(test, file_path, chosen);
+            } else {
+                let _ = save_mgr.save_test(test, file_path);
+            }
         }
     }
 

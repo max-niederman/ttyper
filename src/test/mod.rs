@@ -2,7 +2,7 @@ pub mod results;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::fmt;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 pub struct TestEvent {
     pub time: Instant,
@@ -54,6 +54,9 @@ pub struct Test {
     pub backtracking_enabled: bool,
     pub sudden_death_enabled: bool,
     pub scroll_mode: bool,
+    pub duration: Duration,
+    timer_active: bool,
+    last_activity: Instant,
 }
 
 impl Test {
@@ -65,7 +68,22 @@ impl Test {
             backtracking_enabled,
             sudden_death_enabled,
             scroll_mode: false,
+            duration: Duration::default(),
+            timer_active: false,
+            last_activity: Instant::now(),
         }
+    }
+
+    pub fn update_duration(&mut self) {
+        if self.timer_active {
+            self.duration += self.last_activity.elapsed();
+        }
+        self.last_activity = Instant::now();
+    }
+
+    pub fn set_timer_active(&mut self, active: bool) {
+        self.timer_active = active;
+        self.last_activity = Instant::now();
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) {

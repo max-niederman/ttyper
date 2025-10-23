@@ -81,8 +81,24 @@ impl ThemedWidget for &Test {
         // Chunks
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Length(3), Constraint::Length(6)])
+            .constraints([
+                Constraint::Length(1),
+                Constraint::Length(3),
+                Constraint::Min(0),
+            ])
             .split(area);
+
+        // Stats
+        let words_typed = self.current_word;
+        let total_words = self.words.len();
+        let minutes = self.duration.as_secs() / 60;
+        let seconds = self.duration.as_secs() % 60;
+        let stats_text = format!(
+            "Words: {}/{} | Time: {:02}:{:02}",
+            words_typed, total_words, minutes, seconds
+        );
+        let stats = Paragraph::new(stats_text).alignment(ratatui::layout::Alignment::Right);
+        stats.render(chunks[0], buf);
 
         // Sections
         let input = SizedBlock {
@@ -91,7 +107,7 @@ impl ThemedWidget for &Test {
                 .borders(Borders::ALL)
                 .border_type(theme.border_type)
                 .border_style(theme.input_border),
-            area: chunks[0],
+            area: chunks[1],
         };
         input.draw_inner(
             &Line::from(self.words[self.current_word].progress.clone()),
@@ -111,7 +127,7 @@ impl ThemedWidget for &Test {
             for word in words {
                 let word_width: usize = word.iter().map(|s| s.width()).sum();
 
-                if current_width + word_width > chunks[1].width as usize - 2 {
+                if current_width + word_width > chunks[2].width as usize - 2 {
                     current_line.push(Span::raw("\n"));
                     lines.push(Line::from(current_line.clone()));
                     current_line.clear();
@@ -132,7 +148,7 @@ impl ThemedWidget for &Test {
             // Apply scrolling logic only if scroll_mode is enabled
             if self.scroll_mode {
                 // Calculate visible area height (subtracting borders)
-                let visible_height = (chunks[1].height as usize).saturating_sub(2);
+                let visible_height = (chunks[2].height as usize).saturating_sub(2);
 
                 // Show window starting from current word's line
                 let start_line = current_word_line_index;
@@ -151,7 +167,7 @@ impl ThemedWidget for &Test {
                 .border_type(theme.border_type)
                 .border_style(theme.prompt_border),
         );
-        target.render(chunks[1], buf);
+        target.render(chunks[2], buf);
     }
 }
 
