@@ -11,7 +11,7 @@ use crossterm::{
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     execute, terminal,
 };
-use rand::{seq::SliceRandom, thread_rng};
+use rand::{seq::SliceRandom, thread_rng, Rng};
 use ratatui::{backend::CrosstermBackend, terminal::Terminal};
 use rust_embed::RustEmbed;
 use std::{
@@ -22,6 +22,9 @@ use std::{
     path::PathBuf,
     str,
 };
+use html2text;
+use isahc::ReadResponseExt;
+use isahc::HttpClient;
 
 #[derive(RustEmbed)]
 #[folder = "resources/runtime"]
@@ -64,6 +67,10 @@ struct Opt {
     /// Enable sudden death mode to restart on first error
     #[arg(long)]
     sudden_death: bool,
+
+    /// Read test contents from a random wikipedia page (only supports English currently)
+    #[arg(long, value_name="LANG")]
+    wikipedia: Option<String>,
 }
 
 impl Opt {
@@ -87,39 +94,53 @@ impl Opt {
                 Some(lines.iter().map(String::from).collect())
             }
             None => {
-                let lang_name = self
-                    .language
-                    .clone()
-                    .unwrap_or_else(|| self.config().default_language);
+                match &self.wikipedia {
+                    None => {
+                        let lang_name = self
+                            .language
+                            .clone()
+                            .unwrap_or_else(|| self.config().default_language);
 
-                let bytes: Vec<u8> = self
-                    .language_file
-                    .as_ref()
-                    .map(fs::read)
-                    .and_then(Result::ok)
-                    .or_else(|| fs::read(self.language_dir().join(&lang_name)).ok())
-                    .or_else(|| {
-                        Resources::get(&format!("language/{}", &lang_name))
-                            .map(|f| f.data.into_owned())
-                    })?;
+                        let bytes: Vec<u8> = self
+                            .language_file
+                            .as_ref()
+                            .map(fs::read)
+                            .and_then(Result::ok)
+                            .or_else(|| fs::read(self.language_dir().join(&lang_name)).ok())
+                            .or_else(|| {
+                            Resources::get(&format!("language/{}", &lang_name))
+                                .map(|f| f.data.into_owned())
+                            })?;
 
-                let mut rng = thread_rng();
+                        let mut rng = thread_rng();
 
-                let mut language: Vec<&str> = str::from_utf8(&bytes)
-                    .expect("Language file had non-utf8 encoding.")
-                    .lines()
-                    .collect();
-                language.shuffle(&mut rng);
+                        let mut language: Vec<&str> = str::from_utf8(&bytes)
+                            .expect("Language file had non-utf8 encoding.")
+                            .lines()
+                            .collect();
+                        language.shuffle(&mut rng);
 
-                let mut contents: Vec<_> = language
-                    .into_iter()
-                    .cycle()
-                    .take(self.words.get())
-                    .map(ToOwned::to_owned)
-                    .collect();
-                contents.shuffle(&mut rng);
+                        let mut contents: Vec<_> = language
+                            .into_iter()
+                            .cycle()
+                            .take(self.words.get())
+                            .map(ToOwned::to_owned)
+                            .collect();
+                        contents.shuffle(&mut rng);
 
-                Some(contents)
+                        Some(contents)
+                        }
+                        
+                    Some(lang) => {
+                        //grab random article
+                        let mut contents:Vec<String> = rand_wikipedia_txt(&lang).split_whitespace().map(|s| s.to_string()).collect();
+                        //cut off references
+                        contents.clone().into_iter().position(|x| x == "References").and_then(|i| Some(contents.split_off(i)));
+                        //grab random words
+                        let start = thread_rng().gen_range(0..contents.len()-self.words.get());
+                        Some(contents[start..start+self.words.get()].to_vec())
+                    }
+                }
             }
         }
     }
@@ -168,7 +189,57 @@ impl Opt {
     fn language_dir(&self) -> PathBuf {
         self.config_dir().join("language")
     }
+
 }
+fn rand_wikipedia_txt(lang:&str)-> String {
+    //user-agent see here: https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_User-Agent_Policy
+    let ua = "rust-test/0 (williamlgustafson@gmail.com) html5ever";
+    let url = format!("https://{lang}.wikipedia.org/api/rest_v1/page/random/html");
+    let client = HttpClient::builder()
+        .default_headers(&[
+            ("User-Agent", ua)
+        ])
+        .build()
+        .unwrap();
+    let response = client.get(url);
+    let txt = response.expect("Request failed").text().unwrap();
+    //txt looks something like
+    //See Other. Redirecting to https://en.wikipedia.org/wiki/42_(number)
+    let urlstart :usize = match txt.find("http")
+            {
+            Some(i) => i,
+            None => panic!("No url found"),
+            };
+    let urlend :usize = match txt[urlstart..].find(" ")
+            {
+            Some(i) => urlstart + i,
+            None => txt.len() as usize,
+            };
+    let redirect = &txt[urlstart..urlend];
+    
+    let client = HttpClient::builder()
+        .default_headers(&[
+            ("User-Agent", ua)
+        ])
+        .build()
+        .unwrap();
+    let response = client.get(redirect);
+    let txt = response.expect("Request failed").text().unwrap();
+
+    //characters to keep in return value
+    let legal_chars = [
+        'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+        'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+        '1','2','3','4','5','6','7','8','9','0',
+        '$','(',')',',','.','!','?','"','\'','-',';',':',' ','\n',
+        ];
+    let chars: String = html2text::from_read_with_decorator(txt.as_bytes(),80,html2text::render::TrivialDecorator::new())
+            .unwrap()
+            .chars()
+            .filter(|&c| legal_chars.contains(&c))
+            .collect();
+    return chars;
+    }
 
 enum State {
     Test(Test),
@@ -327,3 +398,4 @@ fn main() -> io::Result<()> {
 
     Ok(())
 }
+
