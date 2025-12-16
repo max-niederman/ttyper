@@ -68,7 +68,7 @@ struct Opt {
     #[arg(long)]
     sudden_death: bool,
 
-    /// Read test contents from a random wikipedia page (only supports English currently)
+    /// Read test contents from a random wikipedia page
     #[arg(long, value_name="LANG")]
     wikipedia: Option<String>,
 }
@@ -227,16 +227,14 @@ fn rand_wikipedia_txt(lang:&str)-> String {
     let txt = response.expect("Request failed").text().unwrap();
 
     //characters to keep in return value
-    let legal_chars = [
-        'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
-        'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+    let symbols = [
         '1','2','3','4','5','6','7','8','9','0',
         '$','(',')',',','.','!','?','"','\'','-',';',':',' ','\n',
         ];
     let chars: String = html2text::from_read_with_decorator(txt.as_bytes(),80,html2text::render::TrivialDecorator::new())
             .unwrap()
             .chars()
-            .filter(|&c| legal_chars.contains(&c))
+            .filter(|&c| c.is_alphanumeric()||symbols.contains(&c))
             .collect();
     return chars;
     }
