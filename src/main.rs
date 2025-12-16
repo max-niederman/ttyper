@@ -11,6 +11,9 @@ use crossterm::{
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     execute, terminal,
 };
+use html2text;
+use isahc::HttpClient;
+use isahc::ReadResponseExt;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 use ratatui::{backend::CrosstermBackend, terminal::Terminal};
 use rust_embed::RustEmbed;
@@ -22,9 +25,6 @@ use std::{
     path::PathBuf,
     str,
 };
-use html2text;
-use isahc::ReadResponseExt;
-use isahc::HttpClient;
 
 #[derive(RustEmbed)]
 #[folder = "resources/runtime"]
@@ -69,7 +69,7 @@ struct Opt {
     sudden_death: bool,
 
     /// Read test contents from a random wikipedia page
-    #[arg(long, value_name="LANG")]
+    #[arg(long, value_name = "LANG")]
     wikipedia: Option<String>,
 }
 
@@ -108,8 +108,8 @@ impl Opt {
                             .and_then(Result::ok)
                             .or_else(|| fs::read(self.language_dir().join(&lang_name)).ok())
                             .or_else(|| {
-                            Resources::get(&format!("language/{}", &lang_name))
-                                .map(|f| f.data.into_owned())
+                                Resources::get(&format!("language/{}", &lang_name))
+                                    .map(|f| f.data.into_owned())
                             })?;
 
                         let mut rng = thread_rng();
@@ -129,16 +129,23 @@ impl Opt {
                         contents.shuffle(&mut rng);
 
                         Some(contents)
-                        }
-                        
+                    }
+
                     Some(lang) => {
                         //grab random article
-                        let mut contents:Vec<String> = rand_wikipedia_txt(&lang).split_whitespace().map(|s| s.to_string()).collect();
+                        let mut contents: Vec<String> = rand_wikipedia_txt(&lang)
+                            .split_whitespace()
+                            .map(|s| s.to_string())
+                            .collect();
                         //cut off references
-                        contents.clone().into_iter().position(|x| x == "References").and_then(|i| Some(contents.split_off(i)));
+                        contents
+                            .clone()
+                            .into_iter()
+                            .position(|x| x == "References")
+                            .and_then(|i| Some(contents.split_off(i)));
                         //grab random words
-                        let start = thread_rng().gen_range(0..contents.len()-self.words.get());
-                        Some(contents[start..start+self.words.get()].to_vec())
+                        let start = thread_rng().gen_range(0..contents.len() - self.words.get());
+                        Some(contents[start..start + self.words.get()].to_vec())
                     }
                 }
             }
@@ -189,38 +196,31 @@ impl Opt {
     fn language_dir(&self) -> PathBuf {
         self.config_dir().join("language")
     }
-
 }
-fn rand_wikipedia_txt(lang:&str)-> String {
+fn rand_wikipedia_txt(lang: &str) -> String {
     //user-agent see here: https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_User-Agent_Policy
     let ua = "ttyper (williamlgustafson@gmail.com) isahc";
     let url = format!("https://{lang}.wikipedia.org/api/rest_v1/page/random/html");
     let client = HttpClient::builder()
-        .default_headers(&[
-            ("User-Agent", ua)
-        ])
+        .default_headers(&[("User-Agent", ua)])
         .build()
         .unwrap();
     let response = client.get(url);
     let txt = response.expect("Request failed").text().unwrap();
     //txt looks something like
     //See Other. Redirecting to https://en.wikipedia.org/wiki/42_(number)
-    let urlstart :usize = match txt.find("http")
-            {
-            Some(i) => i,
-            None => panic!("No url found"),
-            };
-    let urlend :usize = match txt[urlstart..].find(" ")
-            {
-            Some(i) => urlstart + i,
-            None => txt.len() as usize,
-            };
+    let urlstart: usize = match txt.find("http") {
+        Some(i) => i,
+        None => panic!("No url found"),
+    };
+    let urlend: usize = match txt[urlstart..].find(" ") {
+        Some(i) => urlstart + i,
+        None => txt.len() as usize,
+    };
     let redirect = &txt[urlstart..urlend];
-    
+
     let client = HttpClient::builder()
-        .default_headers(&[
-            ("User-Agent", ua)
-        ])
+        .default_headers(&[("User-Agent", ua)])
         .build()
         .unwrap();
     let response = client.get(redirect);
@@ -228,16 +228,20 @@ fn rand_wikipedia_txt(lang:&str)-> String {
 
     //characters to keep in return value
     let symbols = [
-        '1','2','3','4','5','6','7','8','9','0',
-        '$','(',')',',','.','!','?','"','\'','-',';',':',' ','\n',
-        ];
-    let chars: String = html2text::from_read_with_decorator(txt.as_bytes(),80,html2text::render::TrivialDecorator::new())
-            .unwrap()
-            .chars()
-            .filter(|&c| c.is_alphanumeric()||symbols.contains(&c))
-            .collect();
+        '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '$', '(', ')', ',', '.', '!', '?', '"',
+        '\'', '-', ';', ':', ' ', '\n',
+    ];
+    let chars: String = html2text::from_read_with_decorator(
+        txt.as_bytes(),
+        80,
+        html2text::render::TrivialDecorator::new(),
+    )
+    .unwrap()
+    .chars()
+    .filter(|&c| c.is_alphanumeric() || symbols.contains(&c))
+    .collect();
     return chars;
-    }
+}
 
 enum State {
     Test(Test),
@@ -396,4 +400,3 @@ fn main() -> io::Result<()> {
 
     Ok(())
 }
-
