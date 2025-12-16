@@ -193,7 +193,7 @@ impl Opt {
 }
 fn rand_wikipedia_txt(lang:&str)-> String {
     //user-agent see here: https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_User-Agent_Policy
-    let ua = "rust-test/0 (williamlgustafson@gmail.com) html5ever";
+    let ua = "ttyper (williamlgustafson@gmail.com) isahc";
     let url = format!("https://{lang}.wikipedia.org/api/rest_v1/page/random/html");
     let client = HttpClient::builder()
         .default_headers(&[
