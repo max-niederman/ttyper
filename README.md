@@ -120,6 +120,7 @@ The following languages are available by default:
 | `rust`               |       The Rust programming language |
 | `thai`               |         4000 most common Thai words |
 | `spanish`            |       100 most common Spanish words |
+| `sql`                |       Structured Query Language     |
 | `ukrainian`          |     100 most common Ukrainian words |
 | `russian`         |    100 most common Russian words |
 | `russian1000`         |    100 most common Russian words |
