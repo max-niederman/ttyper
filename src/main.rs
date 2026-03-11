@@ -214,7 +214,8 @@ impl State {
                     let progress_width =
                         ratatui::text::Line::from(test.words[test.current_word].progress.as_str())
                             .width() as u16;
-                    f.set_cursor(inner_x + progress_width, inner_y);
+                    let max_cursor_x = chunks[0].right().saturating_sub(2);
+                    f.set_cursor((inner_x + progress_width).min(max_cursor_x), inner_y);
                 })?;
             }
             State::Results(results) => {
