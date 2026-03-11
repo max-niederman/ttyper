@@ -13,7 +13,11 @@ use crossterm::{
     execute, terminal,
 };
 use rand::{seq::SliceRandom, thread_rng};
-use ratatui::{backend::CrosstermBackend, terminal::Terminal};
+use ratatui::{
+    backend::CrosstermBackend,
+    layout::{Constraint, Direction, Layout},
+    terminal::Terminal,
+};
 use rust_embed::RustEmbed;
 use std::{
     ffi::OsString,
@@ -197,7 +201,20 @@ impl State {
         match self {
             State::Test(test) => {
                 terminal.draw(|f| {
-                    f.render_widget(config.theme.apply_to(test), f.size());
+                    let area = f.size();
+                    f.render_widget(config.theme.apply_to(test), area);
+
+                    // Position cursor at end of input for IME composition support
+                    let chunks = Layout::default()
+                        .direction(Direction::Vertical)
+                        .constraints([Constraint::Length(3), Constraint::Length(6)])
+                        .split(area);
+                    let inner_x = chunks[0].x + 1;
+                    let inner_y = chunks[0].y + 1;
+                    let progress_width =
+                        ratatui::text::Line::from(test.words[test.current_word].progress.as_str())
+                            .width() as u16;
+                    f.set_cursor(inner_x + progress_width, inner_y);
                 })?;
             }
             State::Results(results) => {
