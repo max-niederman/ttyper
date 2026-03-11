@@ -5,7 +5,8 @@ mod ui;
 use config::Config;
 use test::{results::Results, Test};
 
-use clap::Parser;
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::{generate, Shell};
 use crossterm::{
     self, cursor,
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -64,6 +65,18 @@ struct Opt {
     /// Enable sudden death mode to restart on first error
     #[arg(long)]
     sudden_death: bool,
+
+    #[command(subcommand)]
+    command: Option<Command>,
+}
+
+#[derive(Debug, Subcommand)]
+enum Command {
+    /// Generate shell completions
+    Completions {
+        /// Shell to generate completions for
+        shell: Shell,
+    },
 }
 
 impl Opt {
@@ -206,6 +219,11 @@ fn main() -> io::Result<()> {
     let config = opt.config();
     if opt.debug {
         dbg!(&config);
+    }
+
+    if let Some(Command::Completions { shell }) = opt.command {
+        generate(shell, &mut Opt::command(), "ttyper", &mut io::stdout());
+        return Ok(());
     }
 
     if opt.list_languages {
