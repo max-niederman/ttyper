@@ -117,6 +117,7 @@ The following languages are available by default:
 | `qt`                 |                The QT GUI framework |
 | `ruby`               |       The Ruby programming language |
 | `rust`               |       The Rust programming language |
+| `thai`               |         4000 most common Thai words |
 | `spanish`            |       100 most common Spanish words |
 | `ukrainian`          |     100 most common Ukrainian words |
 
