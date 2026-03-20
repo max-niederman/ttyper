@@ -29,7 +29,7 @@ use std::{
 };
 
 #[derive(RustEmbed)]
-#[folder = "resources/runtime"]
+#[folder = "resources/languages"]
 struct Resources;
 
 #[derive(Debug, Parser)]

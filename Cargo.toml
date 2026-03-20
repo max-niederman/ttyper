@@ -10,13 +10,13 @@ authors = ["Max Niederman <max@maxniederman.com>"]
 edition = "2021"
 
 [dependencies]
-clap = { version = "^4.5", features = ["derive"] }
+clap = { version = "4.6.0", features = ["derive"] }
 clap_complete = "^4.5"
+crossterm = "0.29.0"
 dirs = "^5.0"
-crossterm = "^0.27"
-rust-embed = "^8.2"
-toml = "^0.8"
 ratatui = { version = "0.30.0", features = ["serde"] }
+rust-embed = "8.11.0"
+toml = "1.0.7"
 
 [dependencies.rand]
 version = "^0.8"
