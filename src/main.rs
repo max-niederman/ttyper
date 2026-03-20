@@ -16,7 +16,7 @@ use rand::{seq::SliceRandom, thread_rng};
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
-    terminal::Terminal,
+    Terminal,
 };
 use rust_embed::RustEmbed;
 use std::{
@@ -201,11 +201,11 @@ impl State {
         &self,
         terminal: &mut Terminal<B>,
         config: &Config,
-    ) -> io::Result<()> {
+    ) -> Result<(), B::Error> {
         match self {
             State::Test(test) => {
                 terminal.draw(|f| {
-                    let area = f.size();
+                    let area = f.area();
                     f.render_widget(config.theme.apply_to(test), area);
 
                     // Position cursor at end of input for IME composition support
@@ -219,12 +219,12 @@ impl State {
                         ratatui::text::Line::from(test.words[test.current_word].progress.as_str())
                             .width() as u16;
                     let max_cursor_x = chunks[0].right().saturating_sub(2);
-                    f.set_cursor((inner_x + progress_width).min(max_cursor_x), inner_y);
+                    f.set_cursor_position(((inner_x + progress_width).min(max_cursor_x), inner_y));
                 })?;
             }
             State::Results(results) => {
                 terminal.draw(|f| {
-                    f.render_widget(config.theme.apply_to(results), f.size());
+                    f.render_widget(config.theme.apply_to(results), f.area());
                 })?;
             }
         }
