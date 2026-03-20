@@ -16,9 +16,7 @@ dirs = "^5.0"
 crossterm = "^0.27"
 rust-embed = "^8.2"
 toml = "^0.8"
-
-[dependencies.ratatui]
-version = "^0.25"
+ratatui= { version = "^0.25", features = ["serde"] }
 
 [dependencies.rand]
 version = "^0.8"
