@@ -27,6 +27,3 @@ features = ["alloc"]
 [dependencies.serde]
 version = "^1.0"
 features = ["derive"]
-
-[build-dependencies]
-dirs = "^5.0"
