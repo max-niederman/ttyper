@@ -263,7 +263,9 @@ fn main() -> io::Result<()> {
         .expect("Couldn't get test contents. Make sure the specified language actually exists.");
 
     if contents.is_empty() {
-        panic!("Empty test contents.");
+        eprintln!("Error: the provided file or language contains no words to type.");
+        eprintln!("If you specified a file, make sure it isn't empty.");
+        std::process::exit(1);
     }
 
     terminal::enable_raw_mode()?;
@@ -324,10 +326,14 @@ fn main() -> io::Result<()> {
                     modifiers: KeyModifiers::NONE,
                     ..
                 }) => {
+                    let new_contents = opt.gen_contents().expect(
+                        "Couldn't get test contents. Make sure the specified language actually exists.",
+                    );
+                    if new_contents.is_empty() {
+                        continue;
+                    }
                     state = State::Test(Test::new(
-                        opt.gen_contents().expect(
-                            "Couldn't get test contents. Make sure the specified language actually exists.",
-                        ),
+                        new_contents,
                         !opt.no_backtrack,
                         opt.sudden_death,
                         !opt.no_backspace,
