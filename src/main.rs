@@ -384,3 +384,46 @@ fn main() -> io::Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    fn make_opt(path: PathBuf) -> Opt {
+        Opt {
+            contents: Some(path),
+            debug: false,
+            words: num::NonZeroUsize::new(50).unwrap(),
+            config: None,
+            language_file: None,
+            language: None,
+            list_languages: false,
+            no_backtrack: false,
+            sudden_death: false,
+            no_backspace: false,
+            command: None,
+        }
+    }
+
+    #[test]
+    fn gen_contents_empty_file_returns_empty_vec() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("empty.txt");
+        fs::File::create(&path).unwrap();
+
+        let contents = make_opt(path).gen_contents().unwrap();
+        assert!(contents.is_empty(), "empty file should produce empty vec");
+    }
+
+    #[test]
+    fn gen_contents_nonempty_file_returns_words() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("words.txt");
+        let mut f = fs::File::create(&path).unwrap();
+        writeln!(f, "hello world rust").unwrap();
+
+        let contents = make_opt(path).gen_contents().unwrap();
+        assert!(!contents.is_empty(), "non-empty file should produce words");
+    }
+}

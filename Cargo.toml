@@ -30,3 +30,6 @@ features = ["derive"]
 
 [build-dependencies]
 dirs = "^5.0"
+
+[dev-dependencies]
+tempfile = "3.27.0"
