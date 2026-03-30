@@ -57,6 +57,9 @@ pub struct Theme {
     #[serde(deserialize_with = "deserialize_style")]
     pub prompt_cursor: Style,
 
+    #[serde(deserialize_with = "deserialize_style")]
+    pub prompt_skipped: Style,
+
     // results widget
     #[serde(deserialize_with = "deserialize_style")]
     pub results_overview: Style,
@@ -106,6 +109,8 @@ impl Default for Theme {
                 .add_modifier(Modifier::BOLD),
 
             prompt_cursor: Style::default().add_modifier(Modifier::UNDERLINED),
+
+            prompt_skipped: Style::default().fg(Color::Yellow),
 
             results_overview: Style::default()
                 .fg(Color::Cyan)

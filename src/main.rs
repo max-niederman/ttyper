@@ -3,7 +3,7 @@ mod test;
 mod ui;
 
 use config::Config;
-use test::{results::Results, Test};
+use test::{results::Results, DisplayLine, Test};
 
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{generate, Shell};
@@ -22,7 +22,7 @@ use rust_embed::RustEmbed;
 use std::{
     ffi::OsString,
     fs,
-    io::{self, BufRead},
+    io::{self, BufRead, Read},
     num,
     path::PathBuf,
     str,
@@ -74,6 +74,14 @@ struct Opt {
     #[arg(long)]
     no_backspace: bool,
 
+    /// Treat input as raw text: split into words and preserve line layout
+    #[arg(long)]
+    raw: bool,
+
+    /// Display all UTF-8 but skip non-ASCII-printable characters during typing
+    #[arg(long)]
+    qwerty: bool,
+
     #[command(subcommand)]
     command: Option<Command>,
 }
@@ -88,24 +96,76 @@ enum Command {
 }
 
 impl Opt {
-    fn gen_contents(&self) -> Option<Vec<String>> {
+    /// Generate test contents.
+    ///
+    /// Returns `(words, lines)` where `lines` describes the original file
+    /// layout (empty for language/word-list mode).
+    fn gen_contents(&self) -> Option<(Vec<String>, Vec<DisplayLine>)> {
         match &self.contents {
             Some(path) => {
-                let lines: Vec<String> = if path.as_os_str() == "-" {
-                    std::io::stdin()
-                        .lock()
-                        .lines()
-                        .map_while(Result::ok)
-                        .collect()
-                } else {
-                    let file = fs::File::open(path).expect("Error reading language file.");
-                    io::BufReader::new(file)
-                        .lines()
-                        .map_while(Result::ok)
-                        .collect()
-                };
+                if self.raw {
+                    // Raw mode: split into words, preserve line structure
+                    // including empty lines and indentation.
+                    let text = if path.as_os_str() == "-" {
+                        let mut buf = String::new();
+                        std::io::stdin()
+                            .lock()
+                            .read_to_string(&mut buf)
+                            .expect("Error reading from stdin.");
+                        buf
+                    } else {
+                        fs::read_to_string(path).expect("Error reading file.")
+                    };
 
-                Some(lines.iter().map(String::from).collect())
+                    let mut words = Vec::new();
+                    let mut lines = Vec::new();
+
+                    for line in text.lines() {
+                        // Capture leading whitespace, expand tabs to 4 spaces
+                        let indent: String = line
+                            .chars()
+                            .take_while(|c| c.is_whitespace())
+                            .collect::<String>()
+                            .replace('\t', "    ");
+
+                        let word_start = words.len();
+                        for token in line.split_whitespace() {
+                            // Strip control characters, keep all printable chars
+                            let word: String =
+                                token.chars().filter(|c| !c.is_control()).collect();
+                            if !word.is_empty() {
+                                words.push(word);
+                            }
+                        }
+                        let word_count = words.len() - word_start;
+
+                        lines.push(DisplayLine {
+                            indent,
+                            word_start,
+                            word_count,
+                        });
+                    }
+
+                    Some((words, lines))
+                } else {
+                    // Default: each line is one word (original behavior).
+                    let lines: Vec<String> = if path.as_os_str() == "-" {
+                        std::io::stdin()
+                            .lock()
+                            .lines()
+                            .map_while(Result::ok)
+                            .collect()
+                    } else {
+                        let file =
+                            fs::File::open(path).expect("Error reading language file.");
+                        io::BufReader::new(file)
+                            .lines()
+                            .map_while(Result::ok)
+                            .collect()
+                    };
+
+                    Some((lines, Vec::new()))
+                }
             }
             None => {
                 let lang_name = self
@@ -140,7 +200,7 @@ impl Opt {
                     .collect();
                 contents.shuffle(&mut rng);
 
-                Some(contents)
+                Some((contents, Vec::new()))
             }
         }
     }
@@ -209,9 +269,14 @@ impl State {
                     f.render_widget(config.theme.apply_to(test), area);
 
                     // Position cursor at end of input for IME composition support
+                    let prompt_constraint = if !test.lines.is_empty() {
+                        Constraint::Min(6)
+                    } else {
+                        Constraint::Length(6)
+                    };
                     let chunks = Layout::default()
                         .direction(Direction::Vertical)
-                        .constraints([Constraint::Length(3), Constraint::Length(6)])
+                        .constraints([Constraint::Length(3), prompt_constraint])
                         .split(area);
                     let inner_x = chunks[0].x + 1;
                     let inner_y = chunks[0].y + 1;
@@ -258,7 +323,7 @@ fn main() -> io::Result<()> {
 
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
-    let contents = opt
+    let (contents, lines) = opt
         .gen_contents()
         .expect("Couldn't get test contents. Make sure the specified language actually exists.");
 
@@ -282,6 +347,8 @@ fn main() -> io::Result<()> {
         !opt.no_backtrack,
         opt.sudden_death,
         !opt.no_backspace,
+        lines,
+        opt.qwerty,
     ));
 
     state.render_into(&mut terminal, &config)?;
@@ -326,7 +393,7 @@ fn main() -> io::Result<()> {
                     modifiers: KeyModifiers::NONE,
                     ..
                 }) => {
-                    let new_contents = opt.gen_contents().expect(
+                    let (new_contents, new_lines) = opt.gen_contents().expect(
                         "Couldn't get test contents. Make sure the specified language actually exists.",
                     );
                     if new_contents.is_empty() {
@@ -337,6 +404,8 @@ fn main() -> io::Result<()> {
                         !opt.no_backtrack,
                         opt.sudden_death,
                         !opt.no_backspace,
+                        new_lines,
+                        opt.qwerty,
                     ));
                 }
                 Event::Key(KeyEvent {
@@ -359,6 +428,8 @@ fn main() -> io::Result<()> {
                         !opt.no_backtrack,
                         opt.sudden_death,
                         !opt.no_backspace,
+                        Vec::new(),
+                        opt.qwerty,
                     ));
                 }
                 Event::Key(KeyEvent {
@@ -390,7 +461,7 @@ mod tests {
     use super::*;
     use std::io::Write;
 
-    fn make_opt(path: PathBuf) -> Opt {
+    fn make_opt(path: PathBuf, raw: bool, qwerty: bool) -> Opt {
         Opt {
             contents: Some(path),
             debug: false,
@@ -402,6 +473,8 @@ mod tests {
             no_backtrack: false,
             sudden_death: false,
             no_backspace: false,
+            raw,
+            qwerty,
             command: None,
         }
     }
@@ -412,18 +485,151 @@ mod tests {
         let path = dir.path().join("empty.txt");
         fs::File::create(&path).unwrap();
 
-        let contents = make_opt(path).gen_contents().unwrap();
+        let (contents, _) = make_opt(path, false, false).gen_contents().unwrap();
         assert!(contents.is_empty(), "empty file should produce empty vec");
     }
 
     #[test]
-    fn gen_contents_nonempty_file_returns_words() {
+    fn gen_contents_default_lines_as_words() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("words.txt");
         let mut f = fs::File::create(&path).unwrap();
         writeln!(f, "hello world rust").unwrap();
 
-        let contents = make_opt(path).gen_contents().unwrap();
-        assert!(!contents.is_empty(), "non-empty file should produce words");
+        let (contents, lines) = make_opt(path, false, false).gen_contents().unwrap();
+        assert_eq!(contents, vec!["hello world rust"]);
+        assert!(lines.is_empty());
+    }
+
+    #[test]
+    fn gen_contents_raw_splits_words() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("words.txt");
+        let mut f = fs::File::create(&path).unwrap();
+        writeln!(f, "hello world rust").unwrap();
+
+        let (contents, lines) = make_opt(path, true, false).gen_contents().unwrap();
+        assert_eq!(contents, vec!["hello", "world", "rust"]);
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0].word_start, 0);
+        assert_eq!(lines[0].word_count, 3);
+    }
+
+    #[test]
+    fn gen_contents_raw_preserves_unicode() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("unicode.txt");
+        let mut f = fs::File::create(&path).unwrap();
+        writeln!(f, "hello\u{2014}world \u{201c}quoted\u{201d}").unwrap();
+
+        let (contents, _) = make_opt(path, true, false).gen_contents().unwrap();
+        assert_eq!(contents, vec!["hello\u{2014}world", "\u{201c}quoted\u{201d}"]);
+    }
+
+    #[test]
+    fn gen_contents_raw_multiline_tracks_lines() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("multi.txt");
+        let mut f = fs::File::create(&path).unwrap();
+        write!(f, "first line\nsecond line\n\nfourth line").unwrap();
+
+        let (contents, lines) = make_opt(path, true, false).gen_contents().unwrap();
+        assert_eq!(
+            contents,
+            vec!["first", "line", "second", "line", "fourth", "line"]
+        );
+        // 4 lines: line 1, line 2, empty line, line 4
+        assert_eq!(lines.len(), 4);
+        assert_eq!((lines[0].word_start, lines[0].word_count), (0, 2));
+        assert_eq!((lines[1].word_start, lines[1].word_count), (2, 2));
+        assert_eq!(lines[2].word_count, 0); // empty line preserved
+        assert_eq!((lines[3].word_start, lines[3].word_count), (4, 2));
+    }
+
+    #[test]
+    fn gen_contents_raw_empty_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("empty.txt");
+        fs::File::create(&path).unwrap();
+
+        let (contents, lines) = make_opt(path, true, false).gen_contents().unwrap();
+        assert!(contents.is_empty());
+        assert!(lines.is_empty());
+    }
+
+    #[test]
+    fn gen_contents_raw_preserves_whitespace_only_lines() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("spaces.txt");
+        let mut f = fs::File::create(&path).unwrap();
+        write!(f, "hello\n   \n  \t  \nworld").unwrap();
+
+        let (contents, lines) = make_opt(path, true, false).gen_contents().unwrap();
+        assert_eq!(contents, vec!["hello", "world"]);
+        // 4 lines total: "hello", whitespace-only, whitespace-only, "world"
+        assert_eq!(lines.len(), 4);
+        assert_eq!(lines[0].word_count, 1);
+        assert_eq!(lines[1].word_count, 0); // whitespace-only preserved
+        assert_eq!(lines[2].word_count, 0);
+        assert_eq!(lines[3].word_count, 1);
+    }
+
+    #[test]
+    fn gen_contents_raw_keeps_all_unicode_tokens() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("alluni.txt");
+        let mut f = fs::File::create(&path).unwrap();
+        write!(f, "hello \u{2014}\u{2014}\u{2014} world").unwrap();
+
+        let (contents, _) = make_opt(path, true, false).gen_contents().unwrap();
+        assert_eq!(contents, vec!["hello", "\u{2014}\u{2014}\u{2014}", "world"]);
+    }
+
+    #[test]
+    fn gen_contents_default_multiline_each_line_is_word() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("multi.txt");
+        let mut f = fs::File::create(&path).unwrap();
+        write!(f, "first line\nsecond line").unwrap();
+
+        let (contents, lines) = make_opt(path, false, false).gen_contents().unwrap();
+        assert_eq!(contents, vec!["first line", "second line"]);
+        assert!(lines.is_empty());
+    }
+
+    #[test]
+    fn gen_contents_raw_preserves_punctuation() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("punct.txt");
+        let mut f = fs::File::create(&path).unwrap();
+        write!(f, "it's a \"test\" (100%); done!").unwrap();
+
+        let (contents, _) = make_opt(path, true, false).gen_contents().unwrap();
+        assert_eq!(contents, vec!["it's", "a", "\"test\"", "(100%);", "done!"]);
+    }
+
+    #[test]
+    fn gen_contents_raw_expands_tabs_in_indent() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("tabs.txt");
+        let mut f = fs::File::create(&path).unwrap();
+        write!(f, "hello\n\tindented\n\t\tdeep").unwrap();
+
+        let (contents, lines) = make_opt(path, true, false).gen_contents().unwrap();
+        assert_eq!(contents, vec!["hello", "indented", "deep"]);
+        assert_eq!(lines[0].indent, "");
+        assert_eq!(lines[1].indent, "    ");      // 1 tab = 4 spaces
+        assert_eq!(lines[2].indent, "        ");  // 2 tabs = 8 spaces
+    }
+
+    #[test]
+    fn gen_contents_raw_strips_control_chars_from_words() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("ctrl.txt");
+        let mut f = fs::File::create(&path).unwrap();
+        write!(f, "hel\x07lo wor\x00ld").unwrap();
+
+        let (contents, _) = make_opt(path, true, false).gen_contents().unwrap();
+        assert_eq!(contents, vec!["hello", "world"]);
     }
 }

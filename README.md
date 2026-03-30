@@ -57,12 +57,14 @@ USAGE:
     ttyper [FLAGS] [OPTIONS] [contents]
 
 FLAGS:
-    -d, --debug             
+    -d, --debug
     -h, --help              Prints help information
         --list-languages    List installed languages
         --no-backtrack      Disable backtracking to completed words
         --sudden-death      Enable sudden death mode to restart on first error
         --no-backspace      Disable backspace
+        --raw               Treat input as raw text: preserve line layout, indentation, and empty lines
+        --qwerty            Display all UTF-8 but skip non-ASCII-printable characters during typing
     -V, --version           Prints version information
 
 OPTIONS:
@@ -77,13 +79,39 @@ ARGS:
 
 ### examples
 
-| command                        |                             test contents |
-| :----------------------------- | ----------------------------------------: |
-| `ttyper`                       |   50 of the 200 most common english words |
-| `ttyper -w 100`                |  100 of the 200 most common English words |
-| `ttyper -w 100 -l english1000` | 100 of the 1000 most common English words |
-| `ttyper --language-file lang`  |      50 random words from the file `lang` |
-| `ttyper text.txt`              |  contents of `text.txt` split at newlines |
+| command                                  |                                          test contents |
+| :--------------------------------------- | ------------------------------------------------------: |
+| `ttyper`                                 |                50 of the 200 most common english words |
+| `ttyper -w 100`                          |               100 of the 200 most common English words |
+| `ttyper -w 100 -l english1000`           |              100 of the 1000 most common English words |
+| `ttyper --language-file lang`            |                   50 random words from the file `lang` |
+| `ttyper text.txt`                        |               contents of `text.txt` split at newlines |
+| `ttyper --raw text.txt`                  |    contents of `text.txt` with original line layout    |
+| `ttyper --raw --qwerty source.rs`        | type a source file, skipping non-ASCII characters      |
+| `man ls \| ttyper --raw --qwerty -`      |         practice typing a man page from stdin          |
+
+### raw mode
+
+By default, ttyper treats each line of a file as a single word. The `--raw` flag changes this to preserve the original formatting of the input file:
+
+- Lines are displayed with their original line breaks and indentation
+- Tabs are expanded to 4 spaces
+- Empty lines are preserved in the display
+- Words are split on whitespace, as they would appear in the file
+- Control characters are stripped from word content
+
+This is useful for practicing with source code, man pages, or any structured text where layout matters.
+
+### qwerty mode
+
+The `--qwerty` flag is designed for typing files that contain Unicode or other non-ASCII characters (e.g. smart quotes, em dashes, accented characters). With this flag:
+
+- All UTF-8 characters are displayed in the prompt
+- Non-ASCII-printable characters are highlighted in yellow and the cursor skips over them
+- The user only needs to type the ASCII-printable portion of each word
+- Words that are entirely non-typeable (e.g. "---") are auto-skipped
+
+This pairs well with `--raw` for practicing with real-world text that may contain typographic characters your keyboard can't produce.
 
 ## languages
 
@@ -171,6 +199,9 @@ prompt_current_untyped = "blue;bold"
 
 # cursor character
 prompt_cursor = "none;underlined"
+
+# skipped non-typeable characters (--qwerty mode)
+prompt_skipped = "yellow"
 
 ## results styles ##
 

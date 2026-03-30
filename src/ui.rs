@@ -78,10 +78,17 @@ impl ThemedWidget for &Test {
     fn render(self, area: Rect, buf: &mut Buffer, theme: &Theme) {
         buf.set_style(area, theme.default);
 
+        // Use flexible prompt height in file mode so more text is visible
+        let prompt_constraint = if !self.lines.is_empty() {
+            Constraint::Min(6)
+        } else {
+            Constraint::Length(6)
+        };
+
         // Chunks
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Length(3), Constraint::Length(6)])
+            .constraints([Constraint::Length(3), prompt_constraint])
             .split(area);
 
         // Sections
@@ -100,27 +107,62 @@ impl ThemedWidget for &Test {
         input.render(buf);
 
         let target_lines: Vec<Line> = {
-            let words = words_to_spans(&self.words, self.current_word, theme);
+            let words = words_to_spans(&self.words, self.current_word, theme, self.qwerty);
 
-            let mut lines: Vec<Line> = Vec::new();
-            let mut current_line: Vec<Span> = Vec::new();
-            let mut current_width = 0;
-            for word in words {
-                let word_width: usize = word.iter().map(|s| s.width()).sum();
-
-                if current_width + word_width > chunks[1].width as usize - 2 {
-                    current_line.push(Span::raw("\n"));
-                    lines.push(Line::from(current_line.clone()));
-                    current_line.clear();
-                    current_width = 0;
+            if !self.lines.is_empty() {
+                // File mode: preserve original line structure with indentation
+                let mut display: Vec<Line> = Vec::new();
+                for dl in &self.lines {
+                    if dl.word_count == 0 {
+                        // Empty line
+                        display.push(Line::from(""));
+                    } else {
+                        let mut line_spans: Vec<Span> = Vec::new();
+                        if !dl.indent.is_empty() {
+                            line_spans.push(Span::raw(dl.indent.clone()));
+                        }
+                        let end = dl.word_start + dl.word_count;
+                        for word in &words[dl.word_start..end] {
+                            line_spans.extend(word.iter().cloned());
+                        }
+                        display.push(Line::from(line_spans));
+                    }
                 }
 
-                current_line.extend(word);
-                current_width += word_width;
-            }
-            lines.push(Line::from(current_line));
+                // Scroll to keep the current line visible
+                let available = chunks[1].height.saturating_sub(2) as usize;
+                let current_line_idx = self
+                    .lines
+                    .iter()
+                    .position(|dl| {
+                        dl.word_count > 0
+                            && self.current_word >= dl.word_start
+                            && self.current_word < dl.word_start + dl.word_count
+                    })
+                    .unwrap_or(0);
+                let scroll = current_line_idx.saturating_sub(available / 2);
+                display.into_iter().skip(scroll).take(available).collect()
+            } else {
+                // Language mode: wrap words at terminal width
+                let mut lines: Vec<Line> = Vec::new();
+                let mut current_line: Vec<Span> = Vec::new();
+                let mut current_width = 0;
+                for word in words {
+                    let word_width: usize = word.iter().map(|s| s.width()).sum();
 
-            lines
+                    if current_width + word_width > chunks[1].width as usize - 2 {
+                        current_line.push(Span::raw("\n"));
+                        lines.push(Line::from(current_line.clone()));
+                        current_line.clear();
+                        current_width = 0;
+                    }
+
+                    current_line.extend(word);
+                    current_width += word_width;
+                }
+                lines.push(Line::from(current_line));
+                lines
+            }
         };
         let target = Paragraph::new(target_lines).block(
             Block::default()
@@ -137,15 +179,16 @@ fn words_to_spans<'a>(
     words: &'a [TestWord],
     current_word: usize,
     theme: &'a Theme,
+    qwerty: bool,
 ) -> Vec<Vec<Span<'a>>> {
     let mut spans = Vec::new();
 
     for word in &words[..current_word] {
-        let parts = split_typed_word(word);
+        let parts = split_typed_word(word, qwerty);
         spans.push(word_parts_to_spans(parts, theme));
     }
 
-    let parts_current = split_current_word(&words[current_word]);
+    let parts_current = split_current_word(&words[current_word], qwerty);
     spans.push(word_parts_to_spans(parts_current, theme));
 
     for word in &words[current_word + 1..] {
@@ -165,15 +208,34 @@ enum Status {
     Cursor,
     Untyped,
     Overtyped,
+    Skipped,
 }
 
-fn split_current_word(word: &TestWord) -> Vec<(String, Status)> {
+fn split_current_word(word: &TestWord, qwerty: bool) -> Vec<(String, Status)> {
+    use super::test::is_typeable;
+
     let mut parts = Vec::new();
     let mut cur_string = String::new();
     let mut cur_status = Status::Untyped;
 
     let mut progress = word.progress.chars();
     for tc in word.text.chars() {
+        // In qwerty mode, non-typeable chars are displayed but skipped over
+        if qwerty && !is_typeable(tc) {
+            let status = Status::Skipped;
+            if status == cur_status {
+                cur_string.push(tc);
+            } else {
+                if !cur_string.is_empty() {
+                    parts.push((cur_string, cur_status));
+                    cur_string = String::new();
+                }
+                cur_string.push(tc);
+                cur_status = status;
+            }
+            continue;
+        }
+
         let p = progress.next();
         let status = match p {
             None => Status::CurrentUntyped,
@@ -210,13 +272,30 @@ fn split_current_word(word: &TestWord) -> Vec<(String, Status)> {
     parts
 }
 
-fn split_typed_word(word: &TestWord) -> Vec<(String, Status)> {
+fn split_typed_word(word: &TestWord, qwerty: bool) -> Vec<(String, Status)> {
+    use super::test::is_typeable;
+
     let mut parts = Vec::new();
     let mut cur_string = String::new();
     let mut cur_status = Status::Untyped;
 
     let mut progress = word.progress.chars();
     for tc in word.text.chars() {
+        if qwerty && !is_typeable(tc) {
+            let status = Status::Skipped;
+            if status == cur_status {
+                cur_string.push(tc);
+            } else {
+                if !cur_string.is_empty() {
+                    parts.push((cur_string, cur_status));
+                    cur_string = String::new();
+                }
+                cur_string.push(tc);
+                cur_status = status;
+            }
+            continue;
+        }
+
         let p = progress.next();
         let status = match p {
             None => Status::Untyped,
@@ -260,6 +339,7 @@ fn word_parts_to_spans(parts: Vec<(String, Status)>, theme: &Theme) -> Vec<Span<
             Status::CurrentIncorrect => theme.prompt_current_incorrect,
             Status::Cursor => theme.prompt_current_untyped.patch(theme.prompt_cursor),
             Status::Overtyped => theme.prompt_incorrect,
+            Status::Skipped => theme.prompt_skipped,
         };
 
         spans.push(Span::styled(text, style));
@@ -467,7 +547,7 @@ mod tests {
 
             for case in cases {
                 let (word, expected) = setup(case);
-                let got = split_typed_word(&word);
+                let got = split_typed_word(&word, false);
                 assert_eq!(got, expected);
             }
         }
@@ -504,9 +584,38 @@ mod tests {
 
             for case in cases {
                 let (word, expected) = setup(case);
-                let got = split_current_word(&word);
+                let got = split_current_word(&word, false);
                 assert_eq!(got, expected);
             }
+        }
+
+        #[test]
+        fn typed_word_qwerty_skips_unicode() {
+            // Word "café" typed as "caf" — the é is shown as Skipped (yellow)
+            let mut word = TestWord::from("caf\u{00e9}");
+            word.progress = "caf".to_string();
+
+            let got = split_typed_word(&word, true);
+            let expected = vec![
+                ("caf".to_string(), Correct),
+                ("\u{00e9}".to_string(), Skipped),
+            ];
+            assert_eq!(got, expected);
+        }
+
+        #[test]
+        fn current_word_qwerty_skips_unicode() {
+            // Word "café", user has typed "ca", cursor should be on 'f'
+            let mut word = TestWord::from("caf\u{00e9}");
+            word.progress = "ca".to_string();
+
+            let got = split_current_word(&word, true);
+            let expected = vec![
+                ("ca".to_string(), CurrentCorrect),
+                ("f".to_string(), Cursor),
+                ("\u{00e9}".to_string(), Skipped),
+            ];
+            assert_eq!(got, expected);
         }
     }
 }
