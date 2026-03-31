@@ -92,15 +92,18 @@ The following languages are available by default:
 | name                 |                         description |
 | :------------------- | ----------------------------------: |
 | `c`                  |          The C programming language |
+| `cpp`                |        The C++ programming language |
 | `csharp`             |         The C# programming language |
 | `english100`         |       100 most common English words |
 | `english200`         |       200 most common English words |
 | `english1000`        |      1000 most common English words |
 | `english-advanced`   |              Advanced English words |
+| `english-ngrams`     |          300 common English n-grams |
 | `english-pirate`     |       50 pirate speak English words |
 | `french100`          |        100 most common French words |
 | `french200`          |        200 most common French words |
 | `french1000`         |       1000 most common French words |
+| `galician`           |      185 most common Galician words |
 | `german`             |        207 most common German words |
 | `german1000`         |       1000 most common German words |
 | `german10000`        |      10000 most common German words |
@@ -108,6 +111,8 @@ The following languages are available by default:
 | `html`               |           HyperText Markup Language |
 | `java`               |       The Java programming language |
 | `javascript`         | The Javascript programming language |
+| `korean100`          |        100 most common Korean words |
+| `korean200`          |        200 most common Korean words |
 | `norwegian`          |     200 most common Norwegian words |
 | `php`                |        The PHP programming language |
 | `portuguese`         |    100 most common Portuguese words |
@@ -120,11 +125,11 @@ The following languages are available by default:
 | `rust`               |       The Rust programming language |
 | `thai`               |         4000 most common Thai words |
 | `spanish`            |       100 most common Spanish words |
-| `sql`                |       Structured Query Language     |
+| `sql`                |           Structured Query Language |
 | `ukrainian`          |     100 most common Ukrainian words |
-| `russian`         |    100 most common Russian words |
-| `russian1000`         |    100 most common Russian words |
-| `russian10000`         |    10000 most common Russian words |
+| `russian`            |       200 most common Russian words |
+| `russian1000`        |      1000 most common Russian words |
+| `russian10000`       |     10000 most common Russian words |
 
 Additional languages can be added by creating a file in `TTYPER_CONFIG_DIR/language` with a word on each line. On Linux, the config directory is `$HOME/.config/ttyper`; on Windows, it's `C:\Users\user\AppData\Roaming\ttyper`; and on macOS it's `$HOME/Library/Application Support/ttyper`.
 
@@ -199,9 +204,9 @@ results_restart_prompt = "gray;italic"
 
 The configuration uses a custom style format which can specify most [ANSI escape styling codes](<https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters>), encoded as a string.
 
-Styles begin with the color specification, which can be a single color (the foreground), or two colors seperated by a colon (the foreground and background). Colors can be one of sixteen specified by your terminal, a 24-bit hex color code, `none`, or `reset`.
+Styles begin with the color specification, which can be a single color (the foreground), or two colors separated by a colon (the foreground and background). Colors can be one of sixteen specified by your terminal, a 24-bit hex color code, `none`, or `reset`.
 
-After the colors, you can optionally specify modifiers seperated by a semicolon. A list of modifiers is below:
+After the colors, you can optionally specify modifiers separated by a semicolon. A list of modifiers is below:
 
 - `bold`
 - `crossed_out`
@@ -244,7 +249,7 @@ color     = "none"
           | "lightmagenta"
           | "lightcyan"
           | 6 * hex digit ;
-hex digit = ? hexadecimal digit; 1-9, a-z, and A-Z ? ;
+hex digit = ? hexadecimal digit; 0-9, a-f, and A-F ? ;
 
 modifier  = "bold"
           | "crossed_out"
