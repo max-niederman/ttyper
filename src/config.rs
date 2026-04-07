@@ -1,10 +1,10 @@
-use ratatui::{
-    style::{Color, Modifier, Style},
-    widgets::BorderType,
-};
 use serde::{
     de::{self, IntoDeserializer},
     Deserialize,
+};
+use tuirealm::ratatui::{
+    style::{Color, Modifier, Style},
+    widgets::BorderType,
 };
 
 #[derive(Debug, Deserialize)]
@@ -23,7 +23,7 @@ impl Default for Config {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
 pub struct Theme {
     #[serde(deserialize_with = "deserialize_style")]

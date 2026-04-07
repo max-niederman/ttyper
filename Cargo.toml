@@ -12,22 +12,53 @@ edition = "2021"
 [dependencies]
 clap = { version = "^4.5", features = ["derive"] }
 clap_complete = "^4.5"
-dirs = "^5.0"
-crossterm = "^0.27"
+dir_spec = "0.5.0"
 rust-embed = "^8.2"
 toml = "^0.8"
-
-[dependencies.ratatui]
-version = "^0.25"
-
-[dependencies.rand]
-version = "^0.8"
-features = ["alloc"]
-
-[dependencies.serde]
-version = "^1.0"
-features = ["derive"]
+tuirealm = { version = "3.3.0", features = ["crossterm", "derive", "async-ports"] }
+tokio = { version = "1", features = ["rt", "macros", "rt-multi-thread"] }
+eyre = "0.6.12"
+thiserror = "2.0.18"
+ratatui = "0.30"
+rand = {version = "^0.8", features = ["alloc"]}
+serde = {version = "^1.0", features = ["derive"]}
 
 [dev-dependencies]
 tempfile = "3.27.0"
+
+[workspace.lints.rust]
+mismatched_lifetime_syntaxes = "deny"
+unused_imports = "deny"
+unused_must_use = "deny"
+dead_code = "deny"
+unstable_name_collisions = "deny"
+unused_assignments = "deny"
+deprecated = "deny"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+
+# deny
+filetype_is_file = "deny"
+cargo = { level = "deny", priority = -1 }
+unwrap_used = "deny"
+panic = "deny"
+match_like_matches_macro = "deny"
+needless_update = "deny"
+expect_used = "deny"
+
+# allow
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+empty_docs = "allow"
+unnecessary_debug_formatting = "allow"
+
+# allow
+significant_drop_tightening = "allow"
+missing_panics_doc = "allow"
+multiple_crate_versions = "allow"
 

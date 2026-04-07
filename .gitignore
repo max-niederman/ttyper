@@ -10,3 +10,5 @@ result
 # Editor
 .vim/
 .nvimrc
+
+!/src/components/result
