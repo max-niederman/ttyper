@@ -1,78 +1,10 @@
-pub mod results;
-
-use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
-use std::fmt;
+use super::event::TestEvent;
+use super::word::TestWord;
+use super::Test;
 use std::time::Instant;
-
-pub struct TestEvent {
-    pub time: Instant,
-    pub key: KeyEvent,
-    pub correct: Option<bool>,
-}
-
-pub fn is_missed_word_event(event: &TestEvent) -> bool {
-    event.correct != Some(true)
-}
-
-impl fmt::Debug for TestEvent {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("TestEvent")
-            .field("time", &String::from("Instant { ... }"))
-            .field("key", &self.key)
-            .finish()
-    }
-}
-
-#[derive(Debug)]
-pub struct TestWord {
-    pub text: String,
-    pub progress: String,
-    pub events: Vec<TestEvent>,
-}
-
-impl From<String> for TestWord {
-    fn from(string: String) -> Self {
-        TestWord {
-            text: string,
-            progress: String::new(),
-            events: Vec::new(),
-        }
-    }
-}
-
-impl From<&str> for TestWord {
-    fn from(string: &str) -> Self {
-        Self::from(string.to_string())
-    }
-}
-
-#[derive(Debug)]
-pub struct Test {
-    pub words: Vec<TestWord>,
-    pub current_word: usize,
-    pub complete: bool,
-    pub backtracking_enabled: bool,
-    pub sudden_death_enabled: bool,
-    pub backspace_enabled: bool,
-}
+use tuirealm::ratatui::crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
 impl Test {
-    pub fn new(
-        words: Vec<String>,
-        backtracking_enabled: bool,
-        sudden_death_enabled: bool,
-        backspace_enabled: bool,
-    ) -> Self {
-        Self {
-            words: words.into_iter().map(TestWord::from).collect(),
-            current_word: 0,
-            complete: false,
-            backtracking_enabled,
-            sudden_death_enabled,
-            backspace_enabled,
-        }
-    }
-
     pub fn handle_key(&mut self, key: KeyEvent) {
         if key.kind != KeyEventKind::Press {
             return;
@@ -151,7 +83,6 @@ impl Test {
             _ => {}
         };
     }
-
     fn last_word(&mut self) {
         if self.current_word != 0 {
             self.current_word -= 1;
