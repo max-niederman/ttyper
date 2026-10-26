@@ -98,7 +98,14 @@ impl Opt {
                         .map_while(Result::ok)
                         .collect()
                 } else {
-                    let file = fs::File::open(path).expect("Error reading language file.");
+                    let file = match fs::File::open(path) {
+                        Ok(file) => file,
+                        Err(_) => {
+                            eprintln!("Error opening '{}'", path.display());
+                            return None;
+                        }
+                    };
+
                     io::BufReader::new(file)
                         .lines()
                         .map_while(Result::ok)
@@ -258,9 +265,10 @@ fn main() -> io::Result<()> {
 
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
-    let contents = opt
-        .gen_contents()
-        .expect("Couldn't get test contents. Make sure the specified language actually exists.");
+    let contents = match opt.gen_contents() {
+        Some(contents) => contents,
+        None => return Ok(()),
+    };
 
     if contents.is_empty() {
         eprintln!("Error: the provided file or language contains no words to type.");
